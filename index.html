@@ -1,3 +1,17 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -7,7 +21,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyCErNYguHO8s4m5aeyGRQvM_PWV_9IzJKs",
@@ -18,7 +31,6 @@ firebase.initializeApp({
   appId:"1:684649816270:web:73dc4606b754702f6a309f"
 });
 const db=firebase.firestore();
-const auth=firebase.auth();
 const shopDb={
   customers:()=>db.collection('rollhub_customers'),
   customer:(id)=>db.collection('rollhub_customers').doc(id),
@@ -85,21 +97,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
 .star.on{color:var(--yellow2);}
 .btn-sub{width:100%;background:linear-gradient(135deg,var(--red),var(--red2));color:white;border:none;padding:.9rem;border-radius:14px;font-size:.93rem;font-weight:600;cursor:pointer;margin-top:1.3rem;font-family:'DM Sans',sans-serif;}
 .btn-sub:disabled{opacity:.55;cursor:not-allowed;}
-/* OTP SCREEN */
-.otp-wrap{background:var(--dark);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.5rem;text-align:center;}
-.otp-icon{font-size:3rem;margin-bottom:1rem;}
-.otp-title{font-family:'Oswald',sans-serif;font-size:1.8rem;color:var(--yellow);margin-bottom:.3rem;}
-.otp-sub{font-size:.82rem;color:rgba(255,255,255,.5);margin-bottom:.5rem;}
-.otp-phone{font-size:1rem;font-weight:600;color:var(--yellow);background:rgba(255,214,0,.1);border:1px solid rgba(255,214,0,.25);padding:.5rem 1.2rem;border-radius:50px;margin-bottom:1.5rem;}
-.otp-inputs{display:flex;gap:.6rem;justify-content:center;margin-bottom:1.2rem;}
-.otp-box{width:48px;height:56px;border:2px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(255,255,255,.06);color:white;font-size:1.5rem;font-weight:700;text-align:center;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
-.otp-box:focus{border-color:var(--yellow);}
-.otp-timer{font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:.7rem;}
-.otp-resend{background:none;border:none;color:var(--yellow);font-size:.82rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;}
-.otp-resend:disabled{color:rgba(255,255,255,.3);cursor:not-allowed;text-decoration:none;}
-.btn-otp{width:100%;max-width:320px;background:var(--yellow);border:none;border-radius:14px;padding:.9rem;color:var(--dark);font-size:.95rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:1rem;}
-.btn-otp:disabled{opacity:.5;cursor:not-allowed;}
-.otp-back{background:none;border:none;color:rgba(255,255,255,.4);font-size:.78rem;cursor:pointer;margin-top:.9rem;font-family:'DM Sans',sans-serif;}
+
 /* SOCIAL */
 .sg-bg{background:var(--dark);flex:1;padding:2.2rem 1.5rem;}
 .sg-title{font-family:'Oswald',sans-serif;font-size:1.8rem;color:var(--yellow);text-align:center;margin-bottom:.3rem;}
@@ -290,30 +288,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
       <button class="star" onclick="setStar(5)">★</button>
     </div>
     <div class="fg" style="margin-top:.85rem;"><label>Feedback (optional)</label><textarea class="fc" id="r-feedback" rows="2" placeholder="Kuch kehna hai..."></textarea></div>
-    <button class="btn-sub" id="sub-btn" onclick="submitReg()">📱 OTP se Verify Karein</button>
-    <div id="recaptcha-container"></div>
-  </div>
-</div>
-
-<!-- SCREEN 2.5: OTP VERIFY -->
-<div class="screen" id="s-otp">
-  <div class="otp-wrap">
-    <div class="otp-icon">📱</div>
-    <div class="otp-title">OTP Enter Karein</div>
-    <div class="otp-sub">Aapke number pe 6-digit OTP bheja gaya</div>
-    <div class="otp-phone" id="otp-phone-show">+91 XXXXXXXXXX</div>
-    <div class="otp-inputs">
-      <input class="otp-box" id="o0" maxlength="1" inputmode="numeric" oninput="otpInput(0)" onkeydown="otpKey(event,0)">
-      <input class="otp-box" id="o1" maxlength="1" inputmode="numeric" oninput="otpInput(1)" onkeydown="otpKey(event,1)">
-      <input class="otp-box" id="o2" maxlength="1" inputmode="numeric" oninput="otpInput(2)" onkeydown="otpKey(event,2)">
-      <input class="otp-box" id="o3" maxlength="1" inputmode="numeric" oninput="otpInput(3)" onkeydown="otpKey(event,3)">
-      <input class="otp-box" id="o4" maxlength="1" inputmode="numeric" oninput="otpInput(4)" onkeydown="otpKey(event,4)">
-      <input class="otp-box" id="o5" maxlength="1" inputmode="numeric" oninput="otpInput(5)" onkeydown="otpKey(event,5)">
-    </div>
-    <div class="otp-timer" id="otp-timer">30 second mein resend</div>
-    <button class="otp-resend" id="otp-resend" disabled onclick="resendOTP()">Dobara bhejo</button>
-    <button class="btn-otp" id="otp-verify-btn" onclick="verifyOTP()">✅ Verify & Register</button>
-    <button class="otp-back" onclick="goTo('s-register')">← Wapas jao</button>
+    <button class="btn-sub" id="sub-btn" onclick="submitReg()">🎁 Register & Get Discount</button>
   </div>
 </div>
 
@@ -488,7 +463,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
 
 <script>
 let cust=null,sgDone=0,sgPts=0,sgDoneMap={},starRating=0;
-let confirmResult=null,otpTimerInt=null,pendingReg=null,shopSettings={rupeePerPoint:10,welcomePoints:50};
+let pendingReg=null,shopSettings={rupeePerPoint:10,welcomePoints:50};
 
 // Load social tasks done state from localStorage
 function loadSgState(){
@@ -543,7 +518,7 @@ function goTo(id){
 }
 function setStar(n){starRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<n));}
 
-// STEP 1: Validate form → send OTP
+// Phone validation + direct register (no OTP - use admin verification)
 async function submitReg(){
   const name=document.getElementById('r-name').value.trim();
   const phone=document.getElementById('r-phone').value.trim();
@@ -561,11 +536,11 @@ async function submitReg(){
       localStorage.setItem('rkh_cust',JSON.stringify(cust));
       toast('✅ Pehle se registered! Dashboard khul raha hai...');
       loadDash();setTimeout(()=>goTo('s-dashboard'),1200);
-      btn.disabled=false;btn.textContent='📱 OTP se Verify Karein';return;
+      btn.disabled=false;btn.textContent='🎁 Register & Get Discount';return;
     }
     // Self referral check
     const ref=new URLSearchParams(location.search).get('ref');
-    if(ref){const rd=await shopDb.customer(ref).get();if(rd.exists&&rd.data().phone===phone){toast('❌ Apne aap ko refer nahi kar sakte!');btn.disabled=false;btn.textContent='📱 OTP se Verify Karein';return;}}
+    if(ref){const rd=await shopDb.customer(ref).get();if(rd.exists&&rd.data().phone===phone){toast('❌ Apne aap ko refer nahi kar sakte!');btn.disabled=false;btn.textContent='🎁 Register & Get Discount';return;}}
     // Store pending reg data
     pendingReg={
       name,phone,dob,ref,
@@ -576,78 +551,14 @@ async function submitReg(){
       feedback:document.getElementById('r-feedback').value||null,
       rating:starRating||null
     };
-    btn.textContent='📤 OTP bhej raha hai...';
-    await sendOTP(phone);
+    btn.textContent='⏳ Register ho raha hai...';
+    await completeRegistration();
   }catch(e){toast('❌ '+e.message);}
-  btn.disabled=false;btn.textContent='📱 OTP se Verify Karein';
+  btn.disabled=false;btn.textContent='🎁 Register & Get Discount';
 }
 
-async function sendOTP(phone){
-  try{
-    if(!window.recaptchaVerifier){
-      window.recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible',callback:()=>{}});
-      await window.recaptchaVerifier.render();
-    }
-    confirmResult=await auth.signInWithPhoneNumber('+91'+phone,window.recaptchaVerifier);
-    document.getElementById('otp-phone-show').textContent='+91 '+phone.slice(0,5)+'XXXXX';
-    [0,1,2,3,4,5].forEach(i=>document.getElementById('o'+i).value='');
-    goTo('s-otp');document.getElementById('o0').focus();
-    startOTPTimer();toast('✅ OTP bheja gaya! Check karein.');
-  }catch(e){
-    // Firebase phone auth not enabled fallback
-    if(e.code==='auth/operation-not-allowed'){
-      toast('⚠️ OTP unavailable — direct register ho raha hai');
-      await completeRegistration();
-    }else{throw e;}
-  }
-}
-
-function startOTPTimer(){
-  let sec=30;
-  document.getElementById('otp-resend').disabled=true;
-  document.getElementById('otp-timer').textContent=sec+' second mein resend';
-  clearInterval(otpTimerInt);
-  otpTimerInt=setInterval(()=>{
-    sec--;
-    if(sec<=0){clearInterval(otpTimerInt);document.getElementById('otp-timer').textContent='';document.getElementById('otp-resend').disabled=false;}
-    else document.getElementById('otp-timer').textContent=sec+' second mein resend';
-  },1000);
-}
-
-async function resendOTP(){
-  if(!pendingReg)return;
-  try{
-    if(window.recaptchaVerifier){try{window.recaptchaVerifier.clear();}catch(e){}}
-    window.recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
-    await window.recaptchaVerifier.render();
-    confirmResult=await auth.signInWithPhoneNumber('+91'+pendingReg.phone,window.recaptchaVerifier);
-    startOTPTimer();toast('✅ OTP dobara bheja!');
-    [0,1,2,3,4,5].forEach(i=>document.getElementById('o'+i).value='');
-    document.getElementById('o0').focus();
-  }catch(e){toast('❌ '+e.message);}
-}
-
-function otpInput(i){
-  const v=document.getElementById('o'+i).value.replace(/\D/g,'');
-  document.getElementById('o'+i).value=v;
-  if(v&&i<5)document.getElementById('o'+(i+1)).focus();
-  if(i===5&&v){const code=[0,1,2,3,4,5].map(n=>document.getElementById('o'+n).value).join('');if(code.length===6)verifyOTP();}
-}
-function otpKey(e,i){if(e.key==='Backspace'&&!document.getElementById('o'+i).value&&i>0)document.getElementById('o'+(i-1)).focus();}
-
-async function verifyOTP(){
-  const code=[0,1,2,3,4,5].map(i=>document.getElementById('o'+i).value).join('');
-  if(code.length!==6)return toast('⚠️ 6-digit OTP daalo');
-  const btn=document.getElementById('otp-verify-btn');
-  btn.disabled=true;btn.textContent='⏳ Verify ho raha hai...';
-  try{
-    await confirmResult.confirm(code);
-    toast('✅ Phone verified!');await completeRegistration();
-  }catch(e){toast('❌ Galat OTP! Dobara try karein.');}
-  btn.disabled=false;btn.textContent='✅ Verify & Register';
-}
-
-// STEP 2: After OTP verified — create account
+// Create account directly (phone verified flag = false, admin can verify manually)
+// STEP 2: Create account
 async function completeRegistration(){
   if(!pendingReg)return;
   const {name,phone,dob,anni,city,dishes,occs,feedback,rating,ref}=pendingReg;
@@ -656,7 +567,7 @@ async function completeRegistration(){
   const data={
     id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,
     points:welPts,visits:1,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',
-    phoneVerified:true,
+    phoneVerified:false,
     joinDate:firebase.firestore.FieldValue.serverTimestamp(),
     joinDateStr:new Date().toLocaleDateString('en-IN'),
     lastVisit:firebase.firestore.FieldValue.serverTimestamp(),
@@ -740,7 +651,7 @@ function loadDash(){
   document.getElementById('d-refs').textContent=cust.referralCount||0;
   // Verified badge
   const vw=document.getElementById('verified-badge-wrap');
-  if(vw)vw.innerHTML=cust.phoneVerified?'<span style="color:#66bb6a;font-size:.68rem;">✅ Verified Number</span>':'';
+  if(vw)vw.innerHTML=cust.phoneVerified?'<span style="color:#66bb6a;font-size:.68rem;">✅ Verified</span>':'<span style="color:rgba(255,214,0,.6);font-size:.68rem;">📱 '+cust.phone+'</span>';
   // Tier
   let tier='🥈 Silver',fill=Math.min((pts/300)*100,100),from='Silver',to='Gold (300)',next=`🥇 Gold ke liye ${300-pts} aur points!`;
   if(pts>=700){tier='💎 VIP';fill=100;from='Gold';to='VIP (700)';next='🎉 VIP Diamond! Exclusive benefits!';}
