@@ -1,713 +1,5 @@
 
 
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Kathi Roll Hub — Loyalty Club</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-firebase.initializeApp({
-  apiKey:"AIzaSyCErNYguHO8s4m5aeyGRQvM_PWV_9IzJKs",
-  authDomain:"the-kathi-roll-hub.firebaseapp.com",
-  projectId:"the-kathi-roll-hub",
-  storageBucket:"the-kathi-roll-hub.firebasestorage.app",
-  messagingSenderId:"684649816270",
-  appId:"1:684649816270:web:73dc4606b754702f6a309f"
-});
-const db=firebase.firestore();
-const shopDb={
-  customers:()=>db.collection('rollhub_customers'),
-  customer:(id)=>db.collection('rollhub_customers').doc(id),
-  referrals:()=>db.collection('rollhub_referrals'),
-  transactions:()=>db.collection('rollhub_transactions'),
-  menu:()=>db.collection('rollhub_config').doc('menu'),
-  shopConfig:()=>db.collection('rollhub_config').doc('settings'),
-  socialTasks:()=>db.collection('rollhub_socialTasks')
-};
-</script>
-<style>
-:root{
-  --yellow:#FFD600;--yellow2:#FFC000;--red:#D32F2F;--red2:#B71C1C;
-  --dark:#1A1A1A;--green:#2E7D32;
-  --cream:#FFFDE7;--cream2:#FFF9C4;--brown:#3E2000;--mid:#6D4C00;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);min-height:100vh;max-width:480px;margin:0 auto;}
-.screen{display:none;}
-.screen.active{display:flex;flex-direction:column;min-height:100vh;animation:fadeUp .3s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.w-bg{background:var(--dark);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.8rem;text-align:center;position:relative;overflow:hidden;}
-.w-bg::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,214,0,.03) 0,rgba(255,214,0,.03) 1px,transparent 1px,transparent 18px);}
-.w-logo{font-family:'Oswald',sans-serif;position:relative;z-index:1;margin-bottom:1.5rem;}
-.w-logo .the{font-size:1rem;color:rgba(255,255,255,.6);letter-spacing:4px;}
-.w-logo .kathi{font-size:3rem;color:var(--yellow);line-height:1;font-weight:700;}
-.w-logo .roll{font-size:3rem;color:white;line-height:1;font-weight:700;}
-.w-logo .hub{font-size:3rem;color:var(--red);line-height:1;font-weight:700;}
-.w-logo .tagline{font-size:.8rem;color:rgba(255,255,255,.5);letter-spacing:2px;margin-top:.4rem;}
-.w-award{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,214,0,.12);border:1px solid rgba(255,214,0,.3);color:var(--yellow);padding:.4rem 1rem;border-radius:50px;font-size:.75rem;font-weight:600;margin-bottom:1.3rem;position:relative;z-index:1;}
-.w-chips{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:center;margin-bottom:1.6rem;position:relative;z-index:1;}
-.chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.85);padding:.28rem .75rem;border-radius:50px;font-size:.72rem;}
-.w-open{background:var(--red);color:white;padding:.25rem .75rem;border-radius:50px;font-size:.72rem;font-weight:700;letter-spacing:1px;display:inline-block;margin-bottom:.8rem;position:relative;z-index:1;}
-.btn-join{background:linear-gradient(135deg,var(--yellow),var(--yellow2));color:var(--dark);border:none;padding:.9rem 2.2rem;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 6px 24px rgba(255,214,0,.4);transition:all .25s;position:relative;z-index:1;}
-.w-member{color:rgba(255,255,255,.45);font-size:.78rem;margin-top:.9rem;cursor:pointer;text-decoration:underline;position:relative;z-index:1;}
-.form-header{background:var(--dark);padding:1.3rem 1.5rem 2.2rem;color:white;position:relative;overflow:hidden;}
-.form-header::after{content:'';position:absolute;bottom:-20px;left:0;right:0;height:40px;background:var(--cream);border-radius:50% 50% 0 0/100% 100% 0 0;}
-.back-btn{background:none;border:none;color:rgba(255,255,255,.6);font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.3rem;margin-bottom:.5rem;font-family:'DM Sans',sans-serif;}
-.fh-title{font-family:'Oswald',sans-serif;font-size:1.6rem;color:var(--yellow);}
-.fh-sub{font-size:.77rem;color:rgba(255,255,255,.55);margin-top:.2rem;}
-.form-body{padding:2rem 1.5rem 1.5rem;flex:1;}
-.fsec{font-size:.68rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1.5px;margin:1.4rem 0 .7rem;display:flex;align-items:center;gap:.5rem;}
-.fsec::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--red),transparent);opacity:.3;}
-.fg{margin-bottom:.85rem;}
-.fg label{display:block;font-size:.77rem;font-weight:500;color:var(--mid);margin-bottom:.3rem;}
-.fg label em{color:var(--red);}
-.fc{width:100%;padding:.73rem .9rem;border:1.5px solid #E0CC80;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--brown);background:white;outline:none;transition:border-color .2s;}
-.fc:focus{border-color:var(--yellow2);}
-.fc::placeholder{color:#B8A040;}
-.fg2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
-.dish-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-top:.4rem;}
-.dopt{position:relative;}
-.dopt input{position:absolute;opacity:0;width:0;height:0;}
-.dopt label{display:flex;flex-direction:column;align-items:center;padding:.55rem .3rem;border:1.5px solid #E0CC80;border-radius:10px;cursor:pointer;transition:all .2s;background:white;font-size:.67rem;text-align:center;}
-.dopt label .de{font-size:1.35rem;margin-bottom:.15rem;}
-.dopt input:checked+label{border-color:var(--yellow2);background:rgba(255,214,0,.1);color:var(--mid);}
-.occ-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem;}
-.oopt{position:relative;}
-.oopt input{position:absolute;opacity:0;}
-.oopt label{display:flex;align-items:center;gap:.4rem;padding:.6rem;border:1.5px solid #E0CC80;border-radius:10px;cursor:pointer;font-size:.77rem;transition:all .2s;background:white;margin:0;}
-.oopt input:checked+label{border-color:var(--green);background:rgba(46,125,50,.06);color:var(--green);}
-.stars{display:flex;gap:.4rem;margin-top:.3rem;}
-.star{background:none;border:none;font-size:1.8rem;cursor:pointer;color:#DDD;transition:color .15s;}
-.star.on{color:var(--yellow2);}
-.btn-sub{width:100%;background:linear-gradient(135deg,var(--red),var(--red2));color:white;border:none;padding:.9rem;border-radius:14px;font-size:.93rem;font-weight:600;cursor:pointer;margin-top:1.3rem;font-family:'DM Sans',sans-serif;}
-.btn-sub:disabled{opacity:.55;cursor:not-allowed;}
-
-/* SOCIAL */
-.sg-bg{background:var(--dark);flex:1;padding:2.2rem 1.5rem;}
-.sg-title{font-family:'Oswald',sans-serif;font-size:1.8rem;color:var(--yellow);text-align:center;margin-bottom:.3rem;}
-.sg-sub{color:rgba(255,255,255,.5);font-size:.83rem;text-align:center;margin-bottom:1.6rem;}
-.task-card{display:flex;align-items:center;gap:1rem;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:1rem 1.1rem;margin-bottom:.7rem;cursor:pointer;transition:all .22s;}
-.task-card.done{border-color:rgba(46,125,50,.5);background:rgba(46,125,50,.08);}
-.task-icon{font-size:1.5rem;flex-shrink:0;}
-.task-info h4{font-size:.88rem;font-weight:600;color:white;}
-.task-info p{font-size:.71rem;color:rgba(255,255,255,.5);margin-top:.1rem;}
-.task-pts{font-size:.8rem;font-weight:600;color:var(--yellow);}
-.task-check{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;}
-.task-card.done .task-check{background:var(--green);border-color:var(--green);color:white;}
-.sg-progress{background:rgba(255,255,255,.07);border-radius:10px;padding:1rem;margin-top:.8rem;}
-.sgp-row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.6rem;}
-.sgp-row span:first-child{color:rgba(255,255,255,.5);}
-.sgp-row span:last-child{color:var(--yellow);font-weight:600;}
-.sgp-track{height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
-.sgp-fill{height:100%;border-radius:4px;background:var(--yellow);transition:width .4s ease;}
-.btn-unlock{width:100%;background:var(--yellow);border:none;border-radius:14px;padding:.9rem;color:var(--dark);font-size:.95rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.9rem;}
-.skip-link{text-align:center;color:rgba(255,255,255,.35);font-size:.78rem;margin-top:.8rem;cursor:pointer;text-decoration:underline;}
-/* OFFER */
-.offer-hero{background:linear-gradient(135deg,var(--red),#FF6F00);padding:2.6rem 1.8rem 3.3rem;text-align:center;position:relative;overflow:hidden;}
-.offer-hero::before{content:'🌮';position:absolute;font-size:8rem;opacity:.08;top:-10px;right:-15px;transform:rotate(20deg);}
-.offer-hero::after{content:'';position:absolute;bottom:-22px;left:0;right:0;height:44px;background:var(--cream);border-radius:50% 50% 0 0/100% 100% 0 0;}
-.oh-welcome{color:rgba(255,255,255,.88);font-size:.85rem;margin-bottom:.2rem;}
-.oh-name{font-family:'Oswald',sans-serif;font-size:1.8rem;color:var(--yellow);font-weight:700;}
-.confetti{font-size:2rem;display:block;margin-bottom:.5rem;animation:bounce 1s ease infinite alternate;}
-@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
-.offer-body{padding:1.6rem 1.5rem;flex:1;}
-.oc{background:white;border-radius:18px;padding:1.4rem;margin-bottom:.9rem;box-shadow:0 3px 18px rgba(0,0,0,.07);border:1px solid rgba(255,214,0,.25);position:relative;overflow:hidden;}
-.oc::before{content:'';position:absolute;top:0;left:0;width:5px;height:100%;background:var(--yellow);}
-.oc-badge{background:var(--red);color:white;font-family:'Oswald',sans-serif;font-size:2rem;font-weight:700;display:inline-block;padding:.3rem 1.1rem;border-radius:10px;margin-bottom:.65rem;}
-.oc h3{font-size:.95rem;font-weight:600;color:var(--brown);margin-bottom:.3rem;}
-.oc p{font-size:.8rem;color:var(--mid);line-height:1.5;}
-.code-box{background:var(--cream2);border:2px dashed var(--yellow2);border-radius:11px;padding:.7rem 1rem;margin-top:.85rem;display:flex;align-items:center;justify-content:space-between;}
-.code-val{font-size:1.25rem;font-weight:700;letter-spacing:3px;color:var(--brown);font-family:'Oswald',sans-serif;}
-.copy-btn{background:var(--yellow2);border:none;border-radius:8px;padding:.3rem .75rem;font-size:.72rem;font-weight:600;cursor:pointer;color:var(--brown);font-family:'DM Sans',sans-serif;}
-.ref-card{background:var(--dark);border-radius:18px;padding:1.4rem;margin-bottom:.9rem;color:white;}
-.ref-card h3{font-family:'Oswald',sans-serif;font-size:1.2rem;color:var(--yellow);margin-bottom:.4rem;}
-.ref-card p{color:rgba(255,255,255,.65);font-size:.8rem;line-height:1.5;margin-bottom:.85rem;}
-.ref-tiers{display:flex;gap:.5rem;margin-bottom:.85rem;}
-.rt{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,214,0,.2);border-radius:9px;padding:.5rem .3rem;text-align:center;}
-.rt-num{font-size:1rem;font-weight:700;color:var(--yellow);display:block;font-family:'Oswald',sans-serif;}
-.rt-label{font-size:.6rem;color:rgba(255,255,255,.55);margin-top:.1rem;}
-.rt.hl{background:rgba(255,214,0,.12);border-color:rgba(255,214,0,.5);}
-.share-btn{width:100%;background:var(--yellow);border:none;padding:.78rem;border-radius:12px;color:var(--dark);font-size:.88rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.btn-dash{width:100%;background:var(--green);color:white;border:none;padding:.9rem;border-radius:14px;font-size:.92rem;font-weight:600;cursor:pointer;margin-top:.5rem;font-family:'DM Sans',sans-serif;}
-/* DASHBOARD */
-.dash-header{background:var(--dark);padding:1.3rem 1.5rem;color:white;position:relative;overflow:hidden;}
-.dash-header::after{content:'';position:absolute;bottom:-18px;left:0;right:0;height:36px;background:var(--cream);border-radius:50% 50% 0 0/100% 100% 0 0;}
-.dh-greet{font-size:.73rem;color:rgba(255,255,255,.5);margin-bottom:.1rem;}
-.dh-name{font-family:'Oswald',sans-serif;font-size:1.5rem;color:var(--yellow);}
-.dh-pill{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,214,0,.15);border:1px solid rgba(255,214,0,.3);color:var(--yellow);padding:.25rem .85rem;border-radius:50px;font-size:.74rem;margin-top:.4rem;}
-.dh-tier{display:inline-block;margin-left:.5rem;font-size:.68rem;padding:.12rem .45rem;border-radius:4px;background:rgba(255,255,255,.12);vertical-align:middle;}
-.dash-body{padding:1.5rem 1.5rem 2rem;flex:1;}
-.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin-bottom:1.2rem;}
-.stat-c{background:white;border-radius:12px;padding:.85rem .65rem;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06);border-top:3px solid var(--yellow);}
-.stat-c .sn{font-family:'Oswald',sans-serif;font-size:1.4rem;font-weight:700;color:var(--red);display:block;}
-.stat-c .sl{font-size:.6rem;color:#999;margin-top:.1rem;}
-.sec-head{font-size:.73rem;font-weight:700;color:var(--brown);text-transform:uppercase;letter-spacing:1px;margin-bottom:.65rem;}
-.tier-card{background:var(--dark);border-radius:18px;padding:1.4rem;margin-bottom:1rem;color:white;}
-.tier-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.8rem;}
-.tier-pts{font-family:'Oswald',sans-serif;font-size:3rem;font-weight:700;color:var(--yellow);line-height:1;}
-.tier-badge-big{background:rgba(255,214,0,.15);border:1px solid rgba(255,214,0,.3);color:var(--yellow);padding:.4rem .9rem;border-radius:50px;font-size:.8rem;font-weight:600;}
-.tier-bar{height:8px;background:rgba(255,255,255,.1);border-radius:8px;overflow:hidden;margin:.5rem 0;}
-.tier-fill{height:100%;background:var(--yellow);border-radius:8px;transition:width 1.2s ease;}
-.tier-label{display:flex;justify-content:space-between;font-size:.62rem;color:rgba(255,255,255,.4);}
-.tier-next{font-size:.78rem;color:rgba(255,255,255,.7);margin-top:.5rem;font-weight:500;}
-.streak-card{background:white;border-radius:16px;padding:1.1rem;margin-bottom:.9rem;border-left:5px solid var(--yellow);box-shadow:0 2px 10px rgba(0,0,0,.06);}
-.streak-top{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem;}
-.streak-num{font-family:'Oswald',sans-serif;font-size:2rem;font-weight:700;color:var(--red);}
-.streak-label{font-size:.82rem;font-weight:600;color:var(--brown);}
-.streak-sub{font-size:.72rem;color:var(--mid);}
-.streak-dots{display:flex;gap:.4rem;}
-.sdot{width:32px;height:32px;border-radius:50%;background:var(--cream2);border:2px solid #E0CC80;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#CCC;}
-.sdot.filled{background:var(--red);border-color:var(--red);color:white;}
-.sdot.target{background:rgba(255,214,0,.15);border-color:var(--yellow2);color:var(--mid);font-size:.6rem;font-weight:700;}
-.bday-countdown{background:rgba(211,47,47,.08);border:1.5px solid rgba(211,47,47,.2);border-radius:14px;padding:.9rem 1rem;margin-bottom:.9rem;display:flex;align-items:center;gap:.75rem;}
-.bday-countdown.hidden{display:none;}
-.decay-warn{background:rgba(211,47,47,.1);border:1.5px solid rgba(211,47,47,.25);border-radius:12px;padding:.8rem 1rem;margin-bottom:.9rem;display:flex;align-items:center;gap:.7rem;}
-.decay-warn.hidden{display:none;}
-.decay-warn .dt{font-size:.77rem;color:var(--red);font-weight:500;line-height:1.4;}
-.rwd-list{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.2rem;}
-.rwd{background:white;border-radius:13px;padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;box-shadow:0 2px 10px rgba(0,0,0,.05);border-left:4px solid var(--yellow2);}
-.rwd.used{opacity:.4;border-left-color:#DDD;}
-.rwd.locked{opacity:.6;border-left-color:#EEE;}
-.rwd-icon{font-size:1.7rem;flex-shrink:0;}
-.rwd-info h4{font-size:.84rem;font-weight:600;color:var(--brown);}
-.rwd-info p{font-size:.7rem;color:#999;margin-top:.1rem;}
-.rwd-tag{margin-left:auto;background:var(--cream2);color:var(--brown);padding:.22rem .6rem;border-radius:50px;font-size:.7rem;font-weight:700;flex-shrink:0;}
-.ref-prog{background:white;border-radius:16px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:1.2rem;}
-.ref-earn-msg{font-size:.88rem;font-weight:600;color:var(--brown);margin-bottom:.3rem;}
-.ref-dots{display:flex;gap:.5rem;margin:.65rem 0;}
-.rdot{width:36px;height:36px;border-radius:50%;border:2px solid #E0CC80;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#CCC;}
-.rdot.filled{border-color:var(--green);background:rgba(46,125,50,.1);color:var(--green);}
-.prog-bar{height:5px;background:#F0E8A0;border-radius:50px;overflow:hidden;margin:.4rem 0;}
-.prog-fill{height:100%;background:linear-gradient(to right,var(--yellow2),var(--green));border-radius:50px;}
-.prog-text{font-size:.7rem;color:#999;}
-.fav-section{background:white;border-radius:16px;padding:1rem;margin-bottom:.9rem;box-shadow:0 2px 10px rgba(0,0,0,.05);}
-.fav-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;}
-.fav-chip{background:var(--cream2);color:var(--brown);padding:.28rem .75rem;border-radius:50px;font-size:.73rem;font-weight:500;border:1px solid rgba(255,214,0,.4);}
-.menu-dash{background:white;border-radius:16px;padding:1rem;margin-bottom:.9rem;box-shadow:0 2px 10px rgba(0,0,0,.05);}
-.mi-row{display:flex;align-items:center;gap:.65rem;padding:.5rem 0;border-bottom:1px solid #F5EDD0;}
-.mi-row:last-child{border:none;}
-.mi-badge-sm{font-size:.68rem;font-weight:700;padding:.18rem .5rem;border-radius:6px;background:rgba(211,47,47,.1);color:var(--red);margin-left:auto;flex-shrink:0;}
-.visits-card{background:white;border-radius:16px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.05);}
-.vi{display:flex;align-items:center;gap:.65rem;padding:.5rem 0;border-bottom:1px solid #F5EDD0;}
-.vi:last-child{border:none;}
-.vdot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;}
-.vi p{font-size:.77rem;color:var(--brown);flex:1;}
-.vi span{font-size:.67rem;color:#BBB;}
-.share-btn-red{width:100%;background:linear-gradient(135deg,var(--red),#FF6F00);border:none;padding:.78rem;border-radius:12px;color:white;font-size:.86rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem;font-family:'DM Sans',sans-serif;}
-.verified-badge{display:inline-flex;align-items:center;gap:.3rem;background:rgba(46,125,50,.12);border:1px solid rgba(46,125,50,.3);color:var(--green);padding:.2rem .6rem;border-radius:50px;font-size:.65rem;font-weight:600;margin-top:.3rem;}
-.toast{position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);color:var(--yellow);padding:.7rem 1.3rem;border-radius:50px;font-size:.8rem;font-weight:600;z-index:9999;transition:transform .3s ease;white-space:nowrap;}
-.toast.show{transform:translateX(-50%) translateY(0);}
-</style>
-</head>
-<body>
-
-<!-- SCREEN 1: WELCOME -->
-<div class="screen active" id="s-welcome">
-  <div class="w-bg">
-    <div class="w-open">🕐 24x7 OPEN</div>
-    <div class="w-logo">
-      <div class="the">THE</div>
-      <div class="kathi">KATHI</div>
-      <div class="roll">ROLL</div>
-      <div class="hub">HUB</div>
-      <div class="tagline">THE REAL TASTE OF KATHI ROLL</div>
-    </div>
-    <div class="w-award">⭐ Zomato Top 10 Rolls — Jaipur 2025</div>
-    <div class="w-chips">
-      <span class="chip">🌯 Kathi Rolls</span>
-      <span class="chip">🥟 Momos</span>
-      <span class="chip">🍜 Chinese</span>
-      <span class="chip">🧃 Shakes</span>
-    </div>
-    <p style="color:rgba(255,255,255,.6);font-size:.82rem;margin-bottom:1.4rem;line-height:1.6;position:relative;z-index:1;">Loyalty Club join karo — FREE mein!<br><strong style="color:var(--yellow);">10% OFF + Birthday Gift + ₹200 Cashback</strong></p>
-    <button class="btn-join" onclick="goTo('s-register')">🚀 Join & Get 10% OFF</button>
-    <div class="w-member" onclick="loadExistingMember()">Pehle se member hain? Dashboard →</div>
-  </div>
-</div>
-
-<!-- SCREEN 2: REGISTER -->
-<div class="screen" id="s-register">
-  <div class="form-header">
-    <button class="back-btn" onclick="goTo('s-welcome')">← Back</button>
-    <div class="fh-title">JOIN LOYALTY CLUB</div>
-    <div class="fh-sub">Register karo — free forever</div>
-  </div>
-  <div class="form-body">
-    <div id="ref-notice" style="display:none;background:rgba(255,214,0,.15);border:1px solid var(--yellow2);color:var(--brown);padding:.7rem 1rem;border-radius:10px;margin-bottom:1rem;font-size:.82rem;font-weight:500;"></div>
-    <div class="fsec">👤 Personal Info</div>
-    <div class="fg"><label>Full Name <em>*</em></label><input class="fc" id="r-name" placeholder="Aapka naam..."></div>
-    <div class="fg2">
-      <div class="fg"><label>Mobile <em>*</em></label><input class="fc" id="r-phone" type="tel" placeholder="9876543210" maxlength="10" inputmode="numeric"></div>
-      <div class="fg"><label>Date of Birth <em>*</em></label><input class="fc" id="r-dob" type="date"></div>
-    </div>
-    <div class="fg2">
-      <div class="fg"><label>Anniversary</label><input class="fc" id="r-anni" type="date"></div>
-      <div class="fg"><label>Area / Mohalla</label><input class="fc" id="r-city" placeholder="e.g. Murlipura..."></div>
-    </div>
-    <div class="fsec">🌯 Favourite Items</div>
-    <div class="dish-grid">
-      <div class="dopt"><input type="checkbox" id="d1" value="Paneer Roll"><label for="d1"><span class="de">🧀</span>Paneer Roll</label></div>
-      <div class="dopt"><input type="checkbox" id="d2" value="Aloo Roll"><label for="d2"><span class="de">🥔</span>Aloo Roll</label></div>
-      <div class="dopt"><input type="checkbox" id="d3" value="Chaap Roll"><label for="d3"><span class="de">🌯</span>Chaap Roll</label></div>
-      <div class="dopt"><input type="checkbox" id="d4" value="Steam Momos"><label for="d4"><span class="de">🥟</span>Steam Momos</label></div>
-      <div class="dopt"><input type="checkbox" id="d5" value="Fried Momos"><label for="d5"><span class="de">🍤</span>Fried Momos</label></div>
-      <div class="dopt"><input type="checkbox" id="d6" value="Gravy Momos"><label for="d6"><span class="de">🍲</span>Gravy Momos</label></div>
-      <div class="dopt"><input type="checkbox" id="d7" value="Cold Coffee"><label for="d7"><span class="de">☕</span>Cold Coffee</label></div>
-      <div class="dopt"><input type="checkbox" id="d8" value="Chocolate Shake"><label for="d8"><span class="de">🥤</span>Choco Shake</label></div>
-      <div class="dopt"><input type="checkbox" id="d9" value="Noodles"><label for="d9"><span class="de">🍜</span>Noodles</label></div>
-    </div>
-    <div class="fsec">🎉 Kab Aate Hain?</div>
-    <div class="occ-grid">
-      <div class="oopt"><input type="checkbox" id="o1" value="Dost ke saath"><label for="o1">👫 Dost ke saath</label></div>
-      <div class="oopt"><input type="checkbox" id="o2" value="Family ke saath"><label for="o2">👨‍👩‍👧 Family</label></div>
-      <div class="oopt"><input type="checkbox" id="o3" value="College ke baad"><label for="o3">🎓 College</label></div>
-      <div class="oopt"><input type="checkbox" id="o4" value="Office lunch"><label for="o4">💼 Office</label></div>
-      <div class="oopt"><input type="checkbox" id="o5" value="Raat ko"><label for="o5">🌙 Raat ko</label></div>
-      <div class="oopt"><input type="checkbox" id="o6" value="Party"><label for="o6">🎉 Party</label></div>
-    </div>
-    <div class="fsec">⭐ Rate Karo</div>
-    <div class="stars" id="stars">
-      <button class="star" onclick="setStar(1)">★</button><button class="star" onclick="setStar(2)">★</button>
-      <button class="star" onclick="setStar(3)">★</button><button class="star" onclick="setStar(4)">★</button>
-      <button class="star" onclick="setStar(5)">★</button>
-    </div>
-    <div class="fg" style="margin-top:.85rem;"><label>Feedback (optional)</label><textarea class="fc" id="r-feedback" rows="2" placeholder="Kuch kehna hai..."></textarea></div>
-    <button class="btn-sub" id="sub-btn" onclick="submitReg()">🎁 Register & Get Discount</button>
-  </div>
-</div>
-
-<!-- SCREEN 3: SOCIAL -->
-<div class="screen" id="s-social">
-  <div class="sg-bg">
-    <div style="font-size:2.8rem;text-align:center;margin-bottom:.5rem;">🎉</div>
-    <div class="sg-title">REGISTERED!</div>
-    <div class="sg-sub">Social pe connect karo — bonus points pao</div>
-    <div class="task-card" id="t-ig" onclick="doTask('ig',25,'https://www.instagram.com/the_kathi_roll_hub_murlipuraa')">
-      <div class="task-icon">📸</div>
-      <div class="task-info"><h4>Instagram Follow Karo</h4><p>@the_kathi_roll_hub_murlipuraa</p></div>
-      <div class="task-pts">+25 pts</div>
-      <div class="task-check" id="tc-ig">→</div>
-    </div>
-    <div class="task-card" id="t-gg" onclick="doTask('gg',30,'https://maps.app.goo.gl/YcMkgZpTJ9hy8MDf8')">
-      <div class="task-icon">⭐</div>
-      <div class="task-info"><h4>Google Review Do (5★)</h4><p>Zomato Top 10 ko aur upar!</p></div>
-      <div class="task-pts">+30 pts</div>
-      <div class="task-check" id="tc-gg">→</div>
-    </div>
-    <div class="task-card" id="t-wa" onclick="doTask('wa',20,'https://wa.me/918619721224')">
-      <div class="task-icon">💬</div>
-      <div class="task-info"><h4>WhatsApp pe Contact Karo</h4><p>Daily offers sabse pehle milenge</p></div>
-      <div class="task-pts">+20 pts</div>
-      <div class="task-check" id="tc-wa">→</div>
-    </div>
-    <div class="task-card" id="t-zom" onclick="doTask('zom',20,'https://zomato.com/jaipur/the-kathi-roll-hub')">
-      <div class="task-icon">🍴</div>
-      <div class="task-info"><h4>Zomato pe Follow Karo</h4><p>Online orders pe bhi discount</p></div>
-      <div class="task-pts">+20 pts</div>
-      <div class="task-check" id="tc-zom">→</div>
-    </div>
-    <div class="sg-progress">
-      <div class="sgp-row"><span id="sg-done-lbl">0 of 4</span><span id="sg-pts-lbl">+0 pts pending</span></div>
-      <div class="sgp-track"><div class="sgp-fill" id="sg-fill" style="width:0%"></div></div>
-    </div>
-    <div style="background:rgba(255,214,0,.08);border:1px solid rgba(255,214,0,.2);border-radius:10px;padding:.8rem;margin-top:.8rem;">
-      <p style="font-size:.73rem;color:rgba(255,255,255,.6);line-height:1.5;">⏳ Admin verify karega — 1-2 din mein points credit honge. Real kaam ke liye real reward!</p>
-    </div>
-    <button class="btn-unlock" onclick="goTo('s-offer')" style="margin-top:.9rem;">🎁 Apna Welcome Offer Dekho →</button>
-    <div class="skip-link" onclick="goTo('s-offer')">Skip karein</div>
-  </div>
-</div>
-
-<!-- SCREEN 4: OFFER -->
-<div class="screen" id="s-offer">
-  <div class="offer-hero">
-    <span class="confetti">🌯</span>
-    <div class="oh-welcome">Welcome to the family,</div>
-    <div class="oh-name" id="offer-name">Ji! 🌯</div>
-  </div>
-  <div class="offer-body">
-    <div class="oc">
-      <div class="oc-badge">10% OFF</div>
-      <h3>🎁 Welcome Discount</h3>
-      <p>Aaj ya agli visit pe 10% off. Counter pe yeh code dikhao!</p>
-      <div class="code-box">
-        <span class="code-val" id="disc-code">ROLL10</span>
-        <button class="copy-btn" onclick="copyCode()">📋 Copy</button>
-      </div>
-    </div>
-    <div class="oc" style="border-left-color:var(--red);">
-      <div class="oc-badge" style="background:var(--yellow2);color:var(--dark);font-size:1.8rem;">🎂 FREE</div>
-      <h3>Birthday Special!</h3>
-      <p>Birthday month mein FREE Roll ya Momos + 15% off poore order pe!</p>
-    </div>
-    <div class="oc" style="border-left-color:var(--green);">
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;">
-        <span style="font-size:1.5rem;">🔥</span><h3 style="margin:0;">5th Visit Pe FREE!</h3>
-      </div>
-      <p>Har 5 visits pe FREE roll ya momos. Aate raho!</p>
-      <div style="display:flex;gap:.4rem;margin-top:.7rem;">
-        <div id="v-dot-1" style="flex:1;height:6px;border-radius:3px;background:var(--green);"></div>
-        <div id="v-dot-2" style="flex:1;height:6px;border-radius:3px;background:#E0CC80;"></div>
-        <div id="v-dot-3" style="flex:1;height:6px;border-radius:3px;background:#E0CC80;"></div>
-        <div id="v-dot-4" style="flex:1;height:6px;border-radius:3px;background:#E0CC80;"></div>
-        <div id="v-dot-5" style="flex:1;height:6px;border-radius:3px;background:#E0CC80;"></div>
-      </div>
-    </div>
-    <div class="ref-card">
-      <h3>👥 ₹120 AUR KAMAO!</h3>
-      <p>2 doston ko refer karo — ₹120! 3 dost = ₹200 + free order!</p>
-      <div class="ref-tiers">
-        <div class="rt"><span class="rt-num">1</span><div class="rt-label">₹50</div></div>
-        <div class="rt"><span class="rt-num">2</span><div class="rt-label">₹120</div></div>
-        <div class="rt hl"><span class="rt-num">3</span><div class="rt-label">₹200+FREE</div></div>
-      </div>
-      <button class="share-btn" onclick="shareRef()">📤 Referral Link Share Karo</button>
-    </div>
-    <button class="btn-dash" onclick="goTo('s-dashboard')">📊 Mera Dashboard Dekho</button>
-  </div>
-</div>
-
-<!-- SCREEN 5: DASHBOARD -->
-<div class="screen" id="s-dashboard">
-  <div class="dash-header">
-    <div class="dh-greet">Namaste! Welcome back 🌯</div>
-    <div class="dh-name" id="dash-name">Loading... <span class="dh-tier" id="dash-tier"></span></div>
-    <div style="font-size:.68rem;color:rgba(255,255,255,.4);margin-top:.1rem;" id="verified-badge-wrap"></div>
-    <div class="dh-pill">⭐ <span id="dash-pts">0</span> Points</div>
-  </div>
-  <div class="dash-body">
-    <div class="bday-countdown hidden" id="bday-countdown">
-      <span style="font-size:1.6rem">🎂</span>
-      <div><h4 id="bday-title" style="font-size:.88rem;font-weight:600;color:var(--brown);margin-bottom:.15rem;">Birthday aa rahi hai!</h4>
-      <p id="bday-sub" style="font-size:.75rem;color:var(--mid);">FREE Roll + 15% off aapka wait!</p></div>
-    </div>
-    <div class="decay-warn hidden" id="decay-alert">
-      <span style="font-size:1.1rem">⚠️</span>
-      <div class="dt" id="decay-msg">Points expire hone wale hain!</div>
-    </div>
-    <div class="stats3">
-      <div class="stat-c"><span class="sn" id="d-visits">0</span><div class="sl">Visits</div></div>
-      <div class="stat-c"><span class="sn" id="d-saved">₹0</span><div class="sl">Saved</div></div>
-      <div class="stat-c"><span class="sn" id="d-refs">0</span><div class="sl">Referrals</div></div>
-    </div>
-    <div class="tier-card">
-      <div class="tier-top">
-        <div>
-          <div style="font-size:.7rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:.2rem;">Loyalty Points</div>
-          <div class="tier-pts" id="pts-big">0</div>
-        </div>
-        <div class="tier-badge-big" id="tier-badge">🥈 Silver</div>
-      </div>
-      <div class="tier-label"><span id="tier-from">Silver</span><span id="tier-to">Gold (300)</span></div>
-      <div class="tier-bar"><div class="tier-fill" id="pts-fill" style="width:0%"></div></div>
-      <div class="tier-next" id="tier-next">Gold ke liye 300 aur points!</div>
-    </div>
-    <div class="streak-card">
-      <div class="streak-top">
-        <div class="streak-num" id="streak-num">0</div>
-        <div><div class="streak-label">Visit Streak 🔥</div><div class="streak-sub" id="streak-sub">5th visit pe FREE item!</div></div>
-      </div>
-      <div class="streak-dots" id="streak-dots"></div>
-    </div>
-    <div class="fav-section" id="fav-section" style="display:none">
-      <div class="sec-head">❤️ Favourite Items</div>
-      <div class="fav-chips" id="fav-chips"></div>
-    </div>
-    <div class="menu-dash" id="menu-dash" style="display:none">
-      <div class="sec-head">🌯 Special Offers — Aaj Order Karein</div>
-      <div id="menu-dash-items"></div>
-    </div>
-    <div class="sec-head">🎁 Mere Rewards</div>
-    <div class="rwd-list">
-      <div class="rwd"><span class="rwd-icon">🎂</span><div class="rwd-info"><h4>Birthday Special</h4><p>FREE Roll/Momos + 15% off</p></div><span class="rwd-tag">FREE</span></div>
-      <div class="rwd locked" id="rwd-streak"><span class="rwd-icon">🔥</span><div class="rwd-info"><h4>5th Visit Reward</h4><p id="streak-rwd-text">4 aur visits chahiye!</p></div><span class="rwd-tag" id="streak-rwd-tag">0/5</span></div>
-      <div class="rwd" id="rwd-ref"><span class="rwd-icon">👥</span><div class="rwd-info"><h4>Referral Cashback</h4><p id="ref-sub">3 dost refer karo</p></div><span class="rwd-tag" id="ref-tag">₹0</span></div>
-      <div class="rwd used"><span class="rwd-icon">🎁</span><div class="rwd-info"><h4>Welcome Discount</h4><p>10% off — used</p></div><span class="rwd-tag">Used ✓</span></div>
-    </div>
-    <div class="sec-head">👥 Referral — ₹200 Kamao</div>
-    <div class="ref-prog">
-      <div class="ref-earn-msg" id="ref-earn-msg">₹200 + Free Order earn karo!</div>
-      <div style="font-size:.73rem;color:var(--mid);margin-bottom:.7rem;">3 doston ko refer karo — har ek pe reward!</div>
-      <div class="ref-dots">
-        <div class="rdot" id="rd1">1</div><div class="rdot" id="rd2">2</div><div class="rdot" id="rd3">3</div>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-      <p class="prog-text" id="prog-text">Share karo — ₹200 kamao!</p>
-    </div>
-    <div class="sec-head" style="margin-top:1.2rem;">📋 Visit History</div>
-    <div class="visits-card" id="visit-history">
-      <div class="vi"><div class="vdot"></div><p>Registration — Welcome bonus 50 pts</p><span>Today</span></div>
-    </div>
-    <button class="share-btn-red" style="margin-top:1.2rem;" onclick="shareRef()">📤 Refer Friends & Earn ₹200</button>
-    <div style="text-align:center;margin-top:.9rem;"><button style="background:none;border:none;color:#BBB;font-size:.78rem;cursor:pointer;font-family:DM Sans,sans-serif;" onclick="logoutCustomer()">🚪 Logout</button></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-let cust=null,sgDone=0,sgPts=0,sgDoneMap={},starRating=0;
-let pendingReg=null,shopSettings={rupeePerPoint:10,welcomePoints:50};
-
-// Load social tasks done state from localStorage
-function loadSgState(){
-  const saved=localStorage.getItem('rkh_sg_'+( cust?.id||''));
-  if(saved){
-    const m=JSON.parse(saved);
-    Object.keys(m).forEach(k=>{
-      if(m[k]){
-        sgDoneMap[k]=true;sgDone++;sgPts+={ig:25,gg:30,wa:20,zom:20}[k]||0;
-        const el=document.getElementById('t-'+k);if(el)el.classList.add('done');
-        const tc=document.getElementById('tc-'+k);if(tc)tc.textContent='✓';
-      }
-    });
-    document.getElementById('sg-done-lbl').textContent=sgDone+' of 4';
-    document.getElementById('sg-pts-lbl').textContent='+'+sgPts+' pts (pending)';
-    document.getElementById('sg-fill').style.width=(sgPts/95*100)+'%';
-  }
-}
-
-window.onload=async()=>{
-  document.getElementById('r-dob').max=new Date().toISOString().split('T')[0];
-  // Load shop settings (points rate)
-  try{
-    const s=await shopDb.shopConfig().get();
-    if(s.exists)shopSettings={...shopSettings,...s.data()};
-  }catch(e){}
-  const saved=localStorage.getItem('rkh_cust');
-  if(saved){
-    cust=JSON.parse(saved);
-    try{const s=await shopDb.customer(cust.id).get();if(s.exists){cust={id:s.id,...s.data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));}}catch(e){}
-    loadDash();goTo('s-dashboard');return;
-  }
-  const ref=new URLSearchParams(location.search).get('ref');
-  if(ref){
-    try{const rs=await shopDb.customer(ref).get();if(rs.exists){const n=document.getElementById('ref-notice');n.style.display='block';n.textContent=`👥 ${rs.data().name} ne refer kiya! Register karte hi ${shopSettings.welcomePoints||50} bonus points milenge!`;}}catch(e){}
-  }
-};
-
-async function loadExistingMember(){
-  const phone=prompt('Apna registered mobile number enter karein:');
-  if(!phone||phone.length!==10)return toast('⚠️ 10-digit number chahiye');
-  try{
-    const s=await shopDb.customers().where('phone','==',phone.trim()).get();
-    if(!s.empty){cust={id:s.docs[0].id,...s.docs[0].data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));loadDash();goTo('s-dashboard');}
-    else toast('❌ Number registered nahi. Pehle register karein!');
-  }catch(e){toast('Error: '+e.message);}
-}
-
-function goTo(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');window.scrollTo(0,0);
-}
-function setStar(n){starRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<n));}
-
-// Phone validation + direct register (no OTP - use admin verification)
-async function submitReg(){
-  const name=document.getElementById('r-name').value.trim();
-  const phone=document.getElementById('r-phone').value.trim();
-  const dob=document.getElementById('r-dob').value;
-  if(!name)return toast('⚠️ Naam zaroor likhein');
-  if(!phone||phone.length!==10||!/^\d{10}$/.test(phone))return toast('⚠️ Sahi 10-digit mobile');
-  if(!dob)return toast('⚠️ Date of birth bharen');
-  const btn=document.getElementById('sub-btn');
-  btn.disabled=true;btn.textContent='⏳ Check ho raha hai...';
-  try{
-    // Duplicate check first
-    const ex=await shopDb.customers().where('phone','==',phone).get();
-    if(!ex.empty){
-      cust={id:ex.docs[0].id,...ex.docs[0].data()};
-      localStorage.setItem('rkh_cust',JSON.stringify(cust));
-      toast('✅ Pehle se registered! Dashboard khul raha hai...');
-      loadDash();setTimeout(()=>goTo('s-dashboard'),1200);
-      btn.disabled=false;btn.textContent='🎁 Register & Get Discount';return;
-    }
-    // Self referral check
-    const ref=new URLSearchParams(location.search).get('ref');
-    if(ref){const rd=await shopDb.customer(ref).get();if(rd.exists&&rd.data().phone===phone){toast('❌ Apne aap ko refer nahi kar sakte!');btn.disabled=false;btn.textContent='🎁 Register & Get Discount';return;}}
-    // Store pending reg data
-    pendingReg={
-      name,phone,dob,ref,
-      anni:document.getElementById('r-anni').value||null,
-      city:document.getElementById('r-city').value.trim()||null,
-      dishes:[...document.querySelectorAll('input[id^=d]:checked')].map(x=>x.value),
-      occs:[...document.querySelectorAll('input[id^=o]:checked')].map(x=>x.value),
-      feedback:document.getElementById('r-feedback').value||null,
-      rating:starRating||null
-    };
-    btn.textContent='⏳ Register ho raha hai...';
-    await completeRegistration();
-  }catch(e){toast('❌ '+e.message);}
-  btn.disabled=false;btn.textContent='🎁 Register & Get Discount';
-}
-
-// Create account directly (phone verified flag = false, admin can verify manually)
-// STEP 2: Create account
-async function completeRegistration(){
-  if(!pendingReg)return;
-  const {name,phone,dob,anni,city,dishes,occs,feedback,rating,ref}=pendingReg;
-  const id='RKH'+Date.now().toString().slice(-6)+Math.floor(Math.random()*10);
-  const welPts=(shopSettings.welcomePoints||50)+(ref?50:0);
-  const data={
-    id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,
-    points:welPts,visits:1,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',
-    phoneVerified:false,
-    joinDate:firebase.firestore.FieldValue.serverTimestamp(),
-    joinDateStr:new Date().toLocaleDateString('en-IN'),
-    lastVisit:firebase.firestore.FieldValue.serverTimestamp(),
-    lastVisitDays:0,totalSpend:0,active:true,shop:'rollhub'
-  };
-  await shopDb.customer(id).set(data);
-  if(ref){
-    try{
-      const rd=await shopDb.customer(ref).get();
-      if(rd.exists&&(rd.data().referralCount||0)<3){
-        await shopDb.customer(ref).update({
-          points:firebase.firestore.FieldValue.increment(200),
-          referralCount:firebase.firestore.FieldValue.increment(1),
-          referralBonus:firebase.firestore.FieldValue.increment(200)
-        });
-        // Prevent duplicate referral records
-        const existRef=await shopDb.referrals().where('newCust','==',id).get();
-        if(existRef.empty){
-          await shopDb.referrals().add({referrer:ref,newCust:id,newCustName:name,newCustPhone:phone,date:firebase.firestore.FieldValue.serverTimestamp(),bonus:200,status:'pending'});
-        }
-      }
-    }catch(e){}
-  }
-  cust={...data,id};localStorage.setItem('rkh_cust',JSON.stringify(cust));
-  document.getElementById('disc-code').textContent='ROLL'+phone.slice(-4);
-  document.getElementById('offer-name').textContent=name.split(' ')[0]+' Ji! 🌯';
-  pendingReg=null;
-  for(let i=1;i<=5;i++){const d=document.getElementById('v-dot-'+i);if(d)d.style.background=i===1?'var(--green)':'#E0CC80';}
-  goTo('s-social');
-}
-
-function doTask(id,pts,url){
-  if(sgDoneMap[id]){toast('✅ Already done!');return;}
-  window.open(url,'_blank');
-  sgDoneMap[id]=true;
-  document.getElementById('t-'+id).classList.add('done');
-  document.getElementById('tc-'+id).textContent='✓';
-  sgDone++;sgPts+=pts;
-  document.getElementById('sg-done-lbl').textContent=sgDone+' of 4';
-  document.getElementById('sg-pts-lbl').textContent='+'+sgPts+' pts (pending)';
-  document.getElementById('sg-fill').style.width=(sgPts/95*100)+'%';
-  // Save done state to localStorage
-  localStorage.setItem('rkh_sg_'+(cust?.id||''),JSON.stringify(sgDoneMap));
-  if(cust){shopDb.socialTasks().add({custId:cust.id,taskId:id,points:pts,status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});}
-  toast('✅ Done! Admin verify karega — points credit honge.');
-}
-
-async function loadMenuItems(){
-  try{
-    const s=await shopDb.menu().get();if(!s.exists)return;
-    const pts=cust?.points||0;
-    const items=(s.data().items||[]).filter(i=>{
-      if(!i.discountActive)return false;
-      // Tier-based visibility
-      if(pts>=700)return true; // VIP sees all
-      if(pts>=300&&i.discountGold>0)return true; // Gold sees gold+ items
-      if(pts<300&&i.discountPct>0)return true; // Silver basic
-      return i.discountPct>0;
-    });
-    if(!items.length)return;
-    document.getElementById('menu-dash').style.display='block';
-    document.getElementById('menu-dash-items').innerHTML=items.map(item=>{
-      let disc=item.discountPct||0;
-      const pts2=cust?.points||0;
-      if(pts2>=700&&item.discountVip)disc=item.discountVip;
-      else if(pts2>=300&&item.discountGold)disc=item.discountGold;
-      return`<div class="mi-row"><span style="font-size:1.2rem">${item.emoji||'🌯'}</span><div style="flex:1"><div style="font-size:.85rem;font-weight:500;color:var(--brown)">${item.name}</div><div style="font-size:.7rem;color:var(--mid)">₹${item.price}</div></div><span class="mi-badge-sm">${disc}% OFF</span></div>`;
-    }).join('');
-  }catch(e){}
-}
-
-function loadDash(){
-  if(!cust)return;
-  const name=cust.name||'Customer';
-  document.getElementById('dash-name').childNodes[0].textContent=name+' ';
-  const pts=cust.points||0,visits=cust.visits||0;
-  document.getElementById('dash-pts').textContent=pts;
-  document.getElementById('pts-big').textContent=pts;
-  document.getElementById('d-visits').textContent=visits;
-  document.getElementById('d-saved').textContent='₹'+Math.floor((cust.totalSpend||0)*0.1);
-  document.getElementById('d-refs').textContent=cust.referralCount||0;
-  // Verified badge
-  const vw=document.getElementById('verified-badge-wrap');
-  if(vw)vw.innerHTML=cust.phoneVerified?'<span style="color:#66bb6a;font-size:.68rem;">✅ Verified</span>':'<span style="color:rgba(255,214,0,.6);font-size:.68rem;">📱 '+cust.phone+'</span>';
-  // Tier
-  let tier='🥈 Silver',fill=Math.min((pts/300)*100,100),from='Silver',to='Gold (300)',next=`🥇 Gold ke liye ${300-pts} aur points!`;
-  if(pts>=700){tier='💎 VIP';fill=100;from='Gold';to='VIP (700)';next='🎉 VIP Diamond! Exclusive benefits!';}
-  else if(pts>=300){fill=Math.min(((pts-300)/400)*100,100);tier='🥇 Gold';from='Gold (300)';to='VIP (700)';next=`💎 VIP ke liye ${700-pts} aur points!`;}
-  document.getElementById('dash-tier').textContent=tier;
-  document.getElementById('tier-badge').textContent=tier;
-  document.getElementById('pts-fill').style.width=fill+'%';
-  document.getElementById('tier-from').textContent=from;
-  document.getElementById('tier-to').textContent=to;
-  document.getElementById('tier-next').textContent=next;
-  // Streak
-  document.getElementById('streak-num').textContent=visits;
-  document.getElementById('streak-sub').textContent=visits>=5&&visits%5===0?'🎉 FREE item! Counter pe claim karo!':`5th visit pe FREE item! (${5-(visits%5)||5} aur)`;
-  const dots=document.getElementById('streak-dots');
-  if(dots){const pos=visits%5||(visits>0?5:0);dots.innerHTML=[1,2,3,4,5].map(i=>`<div class="sdot ${i<pos?'filled':i===5?'target':''}">${i===5?'🎁':i<pos?'✓':i}</div>`).join('');}
-  // Streak reward
-  const swt=document.getElementById('streak-rwd-text'),srt=document.getElementById('streak-rwd-tag');
-  if(visits>=5&&visits%5===0){if(swt)swt.textContent='Counter pe claim karo!';if(srt)srt.textContent='Claim!';document.getElementById('rwd-streak').classList.remove('locked');}
-  else{if(swt)swt.textContent=`${5-(visits%5)||5} aur visits`;if(srt)srt.textContent=`${visits%5||0}/5`;document.getElementById('rwd-streak').classList.add('locked');}
-  // Birthday countdown
-  if(cust.birthday){const today=new Date(),b=new Date(cust.birthday),nb=new Date(today.getFullYear(),b.getMonth(),b.getDate());if(nb<today)nb.setFullYear(today.getFullYear()+1);const dl=Math.ceil((nb-today)/(1000*60*60*24));const bc=document.getElementById('bday-countdown');if(bc&&dl<=30&&dl>0){bc.classList.remove('hidden');document.getElementById('bday-title').textContent=dl===1?'Kal birthday hai! 🎂':`${dl} din mein birthday! 🎂`;}}
-  // Decay warning
-  const lv=cust.lastVisitDays||0;if(lv>=12){document.getElementById('decay-alert').classList.remove('hidden');document.getElementById('decay-msg').textContent=lv>=20?`🚨 ${lv} din ho gaye! Jaldi aao!`:`⚠️ ${lv} din ho gaye! ${15-lv} din baad points ghate shuru honge.`;}
-  // Favourites
-  if(cust.dishes&&cust.dishes.length){document.getElementById('fav-section').style.display='block';document.getElementById('fav-chips').innerHTML=cust.dishes.map(d=>`<span class="fav-chip">${d}</span>`).join('');}
-  // Menu (Gold+ sees tier-specific discounts)
-  if(pts>=300)loadMenuItems();
-  // Referral
-  const refs=cust.referralCount||0;
-  ['rd1','rd2','rd3'].forEach((id,i)=>{if(i<refs){document.getElementById(id).classList.add('filled');document.getElementById(id).textContent='✓';}});
-  document.getElementById('prog-fill').style.width=Math.min((refs/3)*100,100)+'%';
-  document.getElementById('prog-text').textContent=refs>=3?'🎉 ₹200 earned! Counter pe claim karo.':'Share karo — ₹200 kamao!';
-  document.getElementById('ref-tag').textContent=refs>0?`₹${[0,50,120,200][Math.min(refs,3)]} Earned`:'₹0';
-  document.getElementById('ref-sub').textContent=refs>=3?'Complete! Bonus earned.':refs>0?`${3-refs} aur chahiye`:'3 dost refer karo';
-  document.getElementById('ref-earn-msg').textContent=refs>=3?'🎉 ₹200 + Free Order earned!':'₹200 + Free Order earn karo!';
-  document.getElementById('offer-name').textContent=name.split(' ')[0]+' Ji! 🌯';
-  document.getElementById('disc-code').textContent='ROLL'+(cust.phone||'').slice(-4);
-  // Load social task state
-  loadSgState();
-}
-
-function shareRef(){
-  if(!cust){toast('⚠️ Pehle register karein!');return;}
-  const link=`${location.origin}${location.pathname}?ref=${cust.id}`;
-  const msg=`🌯 *The Kathi Roll Hub — Murlipura, Jaipur*\n\n⭐ Zomato Top 10 in Rolls!\n\nMere saath join karo:\n✅ 10% Welcome Discount\n✅ 50 Bonus Points\n🎂 Birthday pe FREE Roll/Momos\n🔥 5th Visit pe Free Item!\n\nMera referral link:\n👉 ${link}\n\n🌯 Kathi Roll | Momos | Chinese | Shakes`;
-  if(navigator.share)navigator.share({title:'The Kathi Roll Hub',text:msg});
-  else{navigator.clipboard.writeText(msg).then(()=>toast('📤 Copied!'));}
-}
-
-function copyCode(){const code=document.getElementById('disc-code').textContent;navigator.clipboard.writeText(code).then(()=>toast('✅ Code copy: '+code)).catch(()=>toast('Code: '+code));}
-function logoutCustomer(){localStorage.removeItem('rkh_cust');cust=null;sgDone=0;sgPts=0;sgDoneMap={};goTo('s-welcome');toast('👋 Logout!');}
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
-</script>
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -833,6 +125,476 @@ new QRCode(document.getElementById('qr-code'), {
   colorDark: '#111111',
   colorLight: '#FFFFFF',
   correctLevel: QRCode.CorrectLevel.H
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Kathi Roll Hub — Loyalty Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --y:#FFD600;--y2:#FFC000;--r:#D32F2F;--r2:#B71C1C;
+  --dark:#111;--dark2:#1C1C1C;--cream:#FFFBEE;
+  --green:#1B5E20;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:linear-gradient(160deg,#0d0d0d 0%,#1a0800 40%,#0d0d0d 100%);
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:32px 16px;gap:20px;
+}
+
+/* ========== FRONT CARD ========== */
+.front{
+  width:400px;
+  background:var(--y);
+  border-radius:24px;
+  position:relative;overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 24px 80px rgba(0,0,0,.6),
+    0 0 60px rgba(255,214,0,.12);
+}
+
+/* Texture overlay */
+.front::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0,rgba(0,0,0,.03) 1px,transparent 1px,transparent 6px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.02) 0,rgba(0,0,0,.02) 1px,transparent 1px,transparent 6px);
+  z-index:0;
+}
+
+/* Red top stripe */
+.stripe{
+  height:8px;
+  background:linear-gradient(90deg,var(--r2),var(--r),#FF5722,var(--r),var(--r2));
+  position:relative;z-index:2;
+}
+
+/* Top section */
+.f-top{
+  padding:18px 20px 14px;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  position:relative;z-index:1;
+}
+.f-brand{}
+.f-brand .the{font-size:.6rem;letter-spacing:5px;color:rgba(0,0,0,.4);font-weight:700;text-transform:uppercase;display:block;}
+.f-brand .name{font-family:'Oswald',sans-serif;font-size:1.9rem;font-weight:900;color:var(--dark);line-height:.9;display:block;letter-spacing:-1px;}
+.f-brand .name em{color:var(--r);font-style:normal;}
+.f-brand .tagline{font-size:.5rem;color:rgba(0,0,0,.4);letter-spacing:2px;margin-top:5px;display:block;text-transform:uppercase;}
+
+.f-badges{display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:50px;font-size:.55rem;font-weight:700;letter-spacing:.5px;}
+.badge-red{background:var(--r);color:white;}
+.badge-dark{background:var(--dark);color:var(--y);border:1px solid rgba(255,214,0,.2);}
+
+/* QR + Benefits row */
+.f-mid{
+  padding:6px 20px 18px;
+  display:flex;gap:16px;align-items:center;
+  position:relative;z-index:1;
+}
+
+.qr-container{
+  background:white;
+  padding:10px;border-radius:16px;
+  box-shadow:0 6px 20px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.8);
+  flex-shrink:0;position:relative;
+}
+.qr-container::before{
+  content:'SCAN';
+  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+  font-size:.5rem;font-weight:800;color:rgba(0,0,0,.4);letter-spacing:3px;
+  white-space:nowrap;
+}
+
+.benefits{flex:1;display:flex;flex-direction:column;gap:7px;}
+.benefit{
+  display:flex;align-items:center;gap:9px;
+  background:rgba(0,0,0,.07);
+  padding:7px 10px;border-radius:10px;
+  border-left:3px solid var(--r);
+}
+.b-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--r);color:white;
+  font-size:.58rem;font-weight:900;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.b-text{font-size:.65rem;font-weight:600;color:var(--dark);line-height:1.2;}
+.b-text strong{color:var(--r);font-size:.72rem;}
+
+/* Bottom strip */
+.f-bottom{
+  background:var(--dark);
+  padding:10px 20px;
+  display:flex;justify-content:space-between;align-items:center;
+  position:relative;z-index:1;
+}
+.f-bottom .scan-cta{
+  font-family:'Oswald',sans-serif;
+  font-size:.85rem;font-weight:700;
+  color:var(--y);letter-spacing:.5px;
+}
+.f-bottom .scan-cta small{
+  display:block;font-family:'DM Sans',sans-serif;
+  font-size:.5rem;color:rgba(255,255,255,.35);
+  font-weight:400;letter-spacing:.5px;margin-top:1px;
+}
+.vishtech-mini{
+  text-align:right;
+  font-size:.48rem;color:rgba(255,255,255,.3);line-height:1.6;
+}
+.vishtech-mini span{color:rgba(255,214,0,.6);font-weight:700;}
+
+/* ========== BACK CARD ========== */
+.back{
+  width:400px;
+  background:var(--dark2);
+  border-radius:24px;overflow:hidden;
+  box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,214,0,.08);
+}
+
+/* Back hero */
+.b-hero{
+  background:linear-gradient(135deg,var(--r2) 0%,#C62828 40%,#FF6F00 100%);
+  padding:20px 22px 18px;
+  position:relative;overflow:hidden;
+}
+.b-hero::before{
+  content:'🌯';
+  position:absolute;right:-8px;top:-12px;
+  font-size:6rem;opacity:.1;transform:rotate(20deg);
+  pointer-events:none;
+}
+.b-hero-title{
+  font-family:'Oswald',sans-serif;
+  font-size:1.3rem;font-weight:700;color:white;
+  letter-spacing:.5px;line-height:1.1;
+}
+.b-hero-sub{font-size:.67rem;color:rgba(255,255,255,.75);margin-top:5px;line-height:1.5;}
+
+/* Tier section */
+.b-section{padding:18px 22px 0;}
+.section-label{
+  font-size:.55rem;font-weight:700;color:rgba(255,255,255,.3);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;
+}
+.tiers{display:flex;gap:8px;}
+.tier{
+  flex:1;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:12px 8px;text-align:center;
+}
+.tier.active{
+  background:rgba(255,214,0,.1);
+  border-color:rgba(255,214,0,.35);
+}
+.tier-emoji{font-size:1.3rem;display:block;margin-bottom:4px;}
+.tier-name{
+  font-family:'Oswald',sans-serif;
+  font-size:.7rem;font-weight:700;
+  color:rgba(255,255,255,.4);display:block;
+}
+.tier.active .tier-name{color:var(--y);}
+.tier-pts{font-size:.52rem;color:rgba(255,255,255,.25);display:block;margin-top:2px;}
+
+/* Info grid */
+.info-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:8px;padding:14px 22px 0;
+}
+.info-card{
+  background:rgba(255,255,255,.04);
+  border-radius:12px;padding:11px 13px;
+  border:1px solid rgba(255,255,255,.05);
+}
+.ic-label{font-size:.5rem;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;}
+.ic-val{font-size:.72rem;color:rgba(255,255,255,.75);line-height:1.4;font-weight:500;}
+
+/* Formula */
+.formula{
+  margin:14px 22px 0;
+  background:linear-gradient(135deg,rgba(255,214,0,.12),rgba(255,214,0,.05));
+  border:1px solid rgba(255,214,0,.2);
+  border-radius:14px;padding:13px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.formula-step{text-align:center;}
+.formula-step .num{
+  font-family:'Oswald',sans-serif;
+  font-size:1.4rem;font-weight:700;color:var(--y);display:block;
+}
+.formula-step .lbl{font-size:.52rem;color:rgba(255,255,255,.4);display:block;margin-top:2px;}
+.formula-arrow{font-size:1.2rem;color:rgba(255,214,0,.3);}
+
+/* Emotion strip */
+.emotion-strip{
+  margin:14px 22px 0;
+  background:rgba(46,125,50,.12);
+  border:1px solid rgba(46,125,50,.2);
+  border-radius:12px;padding:11px 14px;
+  text-align:center;
+}
+.emotion-strip p{font-size:.7rem;color:rgba(255,255,255,.6);line-height:1.6;}
+.emotion-strip p strong{color:#81C784;}
+
+/* VishTech footer */
+.vishtech-footer{
+  margin:14px 0 0;
+  background:rgba(0,0,0,.3);
+  border-top:1px solid rgba(255,214,0,.08);
+  padding:13px 22px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.vt-left p{font-size:.6rem;color:rgba(255,255,255,.35);line-height:1.6;}
+.vt-left p strong{color:rgba(255,255,255,.55);}
+.vt-right{text-align:right;}
+.vt-brand{
+  font-family:'Oswald',sans-serif;
+  font-size:.9rem;font-weight:700;
+  color:var(--y);letter-spacing:.5px;display:block;
+}
+.vt-sub{font-size:.48rem;color:rgba(255,255,255,.25);display:block;margin-top:2px;}
+.vt-email{font-size:.45rem;color:rgba(255,214,0,.35);display:block;margin-top:1px;}
+
+/* Print Button */
+.print-wrap{text-align:center;}
+.print-btn{
+  background:linear-gradient(135deg,var(--r),#E53935);
+  color:white;border:none;
+  padding:14px 40px;border-radius:50px;
+  font-family:'DM Sans',sans-serif;
+  font-size:.9rem;font-weight:700;
+  cursor:pointer;letter-spacing:.5px;
+  box-shadow:0 8px 28px rgba(211,47,47,.5);
+  transition:all .25s;
+}
+.print-btn:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(211,47,47,.6);}
+.print-hint{
+  font-size:.7rem;color:rgba(255,255,255,.25);
+  margin-top:10px;line-height:1.6;
+}
+
+@media print{
+  body{background:white;padding:8px;gap:12px;justify-content:flex-start;}
+  .front,.back{box-shadow:none;border:1px solid #DDD;}
+  .back{border:1px solid #DDD;}
+  .print-wrap{display:none;}
+  .b-hero{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== FRONT CARD ===== -->
+<div class="front">
+  <div class="stripe"></div>
+
+  <div class="f-top">
+    <div class="f-brand">
+      <span class="the">The</span>
+      <span class="name">KATHI<br><em>ROLL HUB</em></span>
+      <span class="tagline">The Real Taste of Kathi Roll</span>
+    </div>
+    <div class="f-badges">
+      <span class="badge badge-red">🕐 24x7 OPEN</span>
+      <span class="badge badge-dark">⭐ Zomato Top 10 · 2025</span>
+      <span class="badge badge-dark" style="color:rgba(255,255,255,.4);font-size:.45rem;">Murlipura, Jaipur</span>
+    </div>
+  </div>
+
+  <div class="f-mid">
+    <div class="qr-container">
+      <div id="qr-front" style="width:118px;height:118px;"></div>
+    </div>
+    <div class="benefits">
+      <div class="benefit">
+        <div class="b-num">1</div>
+        <div class="b-text"><strong>10% OFF</strong> Pehli Visit Pe</div>
+      </div>
+      <div class="benefit">
+        <div class="b-num">2</div>
+        <div class="b-text"><strong>FREE ROLL</strong> Birthday Pe 🎂</div>
+      </div>
+      <div class="benefit">
+        <div class="b-num">3</div>
+        <div class="b-text"><strong>5th VISIT</strong> = Free Item 🔥</div>
+      </div>
+      <div class="benefit">
+        <div class="b-num">4</div>
+        <div class="b-text"><strong>₹200 CASH</strong> Refer Karo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f-bottom">
+    <div class="scan-cta">
+      📱 Scan & Join FREE
+      <small>Loyalty Club • Points • Rewards</small>
+    </div>
+    <div class="vishtech-mini">
+      Powered by<br>
+      <span>VishTech Software</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BACK CARD ===== -->
+<div class="back">
+
+  <div class="b-hero">
+    <div class="b-hero-title">🌯 Aapka Apna Loyalty Club</div>
+    <div class="b-hero-sub">
+      Har visit pe points kamate jao — rewards milte jao.<br>
+      Yeh club sirf aapke liye bana hai — bilkul FREE!
+    </div>
+  </div>
+
+  <div class="b-section">
+    <div class="section-label">Membership Levels</div>
+    <div class="tiers">
+      <div class="tier">
+        <span class="tier-emoji">🥈</span>
+        <span class="tier-name">SILVER</span>
+        <span class="tier-pts">0+ Points</span>
+      </div>
+      <div class="tier active">
+        <span class="tier-emoji">🥇</span>
+        <span class="tier-name">GOLD</span>
+        <span class="tier-pts">300+ Points</span>
+      </div>
+      <div class="tier">
+        <span class="tier-emoji">💎</span>
+        <span class="tier-name">VIP</span>
+        <span class="tier-pts">700+ Points</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <span class="ic-label">📍 Location</span>
+      <span class="ic-val">Murlipura Scheme<br>Jaipur, Rajasthan</span>
+    </div>
+    <div class="info-card">
+      <span class="ic-label">📞 Call / WhatsApp</span>
+      <span class="ic-val">8619721224<br>7737585713</span>
+    </div>
+    <div class="info-card">
+      <span class="ic-label">📸 Instagram</span>
+      <span class="ic-val">@the_kathi_roll<br>_hub_murlipuraa</span>
+    </div>
+    <div class="info-card">
+      <span class="ic-label">🍽️ Specialities</span>
+      <span class="ic-val">Rolls · Momos<br>Chinese · Shakes</span>
+    </div>
+  </div>
+
+  <div class="formula">
+    <div class="formula-step">
+      <span class="num">₹10</span>
+      <span class="lbl">Kharch Karo</span>
+    </div>
+    <div class="formula-arrow">→</div>
+    <div class="formula-step">
+      <span class="num">1 Pt</span>
+      <span class="lbl">Milega</span>
+    </div>
+    <div class="formula-arrow">→</div>
+    <div class="formula-step">
+      <span class="num">100</span>
+      <span class="lbl">Pts = ₹10 OFF</span>
+    </div>
+    <div class="formula-arrow">→</div>
+    <div class="formula-step">
+      <span class="num">∞</span>
+      <span class="lbl">Kabhi Expire<br>Nahi Hote!</span>
+    </div>
+  </div>
+
+  <div class="emotion-strip">
+    <p>
+      Aap sirf customer nahi — aap hamare <strong>family member</strong> hain! 🙏<br>
+      Har visit mein ek naya reward aapka wait karta hai.
+    </p>
+  </div>
+
+  <div class="vishtech-footer">
+    <div class="vt-left">
+      <p><strong>Digital Loyalty System</strong><br>
+      Smart • Secure • Simple<br>
+      Aapke liye — bilkul FREE</p>
+    </div>
+    <div class="vt-right">
+      <span class="vt-brand">⚡ VishTech</span>
+      <span class="vt-sub">Software Services</span>
+      <span class="vt-email">vishtechsoftwareservices@gmail.com</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Print Button -->
+<div class="print-wrap">
+  <button class="print-btn" onclick="window.print()">🖨️ Print Karein — A4 Ready</button>
+  <p class="print-hint">
+    Counter pe laminate karke lagao · Customers khud scan karenge<br>
+    Front + Back dono ek hi sheet pe print honge
+  </p>
+</div>
+
+<script>
+new QRCode(document.getElementById('qr-front'),{
+  text:'https://the-kathi-roll-hub-users.vercel.app/',
+  width:118,height:118,
+  colorDark:'#111111',colorLight:'#FFFFFF',
+  correctLevel:QRCode.CorrectLevel.H
 });
 </script>
 </body>
