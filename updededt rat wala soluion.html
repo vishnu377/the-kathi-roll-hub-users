@@ -1,9 +1,5 @@
 
 
-
-
-
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -30,8 +26,7 @@ const shopDb={
   transactions:()=>db.collection('rollhub_transactions'),
   menu:()=>db.collection('rollhub_config').doc('menu'),
   shopConfig:()=>db.collection('rollhub_config').doc('settings'),
-  socialTasks:()=>db.collection('rollhub_socialTasks'),
-  helpTickets:()=>db.collection('rollhub_help')
+  socialTasks:()=>db.collection('rollhub_socialTasks')
 };
 </script>
 <style>
@@ -204,14 +199,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
 .vi span{font-size:.67rem;color:#BBB;}
 .share-btn-red{width:100%;background:linear-gradient(135deg,var(--red),#FF6F00);border:none;padding:.78rem;border-radius:12px;color:white;font-size:.86rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem;font-family:'DM Sans',sans-serif;}
 .verified-badge{display:inline-flex;align-items:center;gap:.3rem;background:rgba(46,125,50,.12);border:1px solid rgba(46,125,50,.3);color:var(--green);padding:.2rem .6rem;border-radius:50px;font-size:.65rem;font-weight:600;margin-top:.3rem;}
-.help-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:flex;align-items:flex-end;justify-content:center;animation:fadeUp .25s ease;}
-.help-modal.hidden{display:none;}
-.hm-box{background:var(--cream);border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-width:480px;}
-.hm-title{font-family:'Oswald',sans-serif;font-size:1.2rem;color:var(--brown);margin-bottom:1rem;}
-.hm-textarea{width:100%;border:1.5px solid #E0CC80;border-radius:12px;padding:.8rem;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--brown);background:white;resize:none;outline:none;margin-bottom:.8rem;}
-.hm-btns{display:flex;gap:.7rem;}
-.hm-submit{flex:1;background:var(--red);color:white;border:none;border-radius:12px;padding:.8rem;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;}
-.hm-cancel{background:rgba(0,0,0,.08);border:none;border-radius:12px;padding:.8rem 1.2rem;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;color:var(--brown);}
 .toast{position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);color:var(--yellow);padding:.7rem 1.3rem;border-radius:50px;font-size:.8rem;font-weight:600;z-index:9999;transition:transform .3s ease;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 </style>
@@ -456,49 +443,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
       <div class="vi"><div class="vdot"></div><p>Registration — Welcome bonus 50 pts</p><span>Today</span></div>
     </div>
     <button class="share-btn-red" style="margin-top:1.2rem;" onclick="shareRef()">📤 Refer Friends & Earn ₹200</button>
-    
-    <!-- HELP BUTTON — Unique Feature -->
-    <div id="help-section" style="display:none;margin-top:.9rem;background:linear-gradient(135deg,rgba(46,125,50,.15),rgba(46,125,50,.05));border:1.5px solid rgba(46,125,50,.25);border-radius:16px;padding:1rem;text-align:center;">
-      <div style="font-size:.78rem;color:var(--brown);font-weight:600;margin-bottom:.4rem;" id="help-msg-text">Koi bhi problem? Hum help karenge!</div>
-      <button onclick="contactHelp()" style="background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;padding:.65rem 1.5rem;border-radius:50px;font-family:DM Sans,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(37,211,102,.35);">
-        💬 WhatsApp pe Help Lein
-      </button>
-      <div style="font-size:.62rem;color:var(--mid);margin-top:.4rem;">Points, orders, kuch bhi — turant reply milega</div>
-    </div>
-
-    <!-- MILESTONE REWARD NOTICE -->
-    <div id="milestone-notice" style="display:none;margin-top:.9rem;background:linear-gradient(135deg,rgba(255,214,0,.15),rgba(255,214,0,.05));border:1.5px solid rgba(255,214,0,.4);border-radius:16px;padding:1rem;text-align:center;">
-      <div style="font-size:1.8rem;margin-bottom:.3rem;" id="milestone-emoji">🎁</div>
-      <div style="font-size:.88rem;font-weight:700;color:var(--brown);" id="milestone-title">Visit Reward!</div>
-      <div style="font-size:.75rem;color:var(--mid);margin-top:.3rem;" id="milestone-desc">Counter pe claim karein</div>
-    </div>
-
-    <!-- Help Section -->
-    <div style="background:white;border-radius:16px;padding:1rem;margin-top:1.2rem;box-shadow:0 2px 10px rgba(0,0,0,.05);">
-      <div style="font-size:.73rem;font-weight:700;color:var(--brown);text-transform:uppercase;letter-spacing:1px;margin-bottom:.7rem;">💬 Koi Problem? Help Chahiye?</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.7rem;">
-        <button onclick="openHelp('complaint')" style="background:rgba(211,47,47,.08);border:1px solid rgba(211,47,47,.2);color:var(--red);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">🚫 Complaint</button>
-        <button onclick="openHelp('query')" style="background:rgba(255,214,0,.1);border:1px solid rgba(255,214,0,.3);color:var(--brown);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">❓ Query</button>
-        <button onclick="openHelp('suggestion')" style="background:rgba(46,125,50,.08);border:1px solid rgba(46,125,50,.2);color:var(--green);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">💡 Suggestion</button>
-        <button onclick="openHelp('compliment')" style="background:rgba(255,214,0,.1);border:1px solid rgba(255,214,0,.3);color:var(--mid);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">❤️ Compliment</button>
-      </div>
-      <p style="font-size:.68rem;color:#AAA;text-align:center;">Owner directly respond karega WhatsApp pe</p>
-    </div>
     <div style="text-align:center;margin-top:.9rem;"><button style="background:none;border:none;color:#BBB;font-size:.78rem;cursor:pointer;font-family:DM Sans,sans-serif;" onclick="logoutCustomer()">🚪 Logout</button></div>
   </div>
 </div>
 
-<!-- HELP MODAL -->
-<div class="help-modal hidden" id="help-modal">
-  <div class="hm-box">
-    <div class="hm-title" id="hm-title">💬 Apni baat batao</div>
-    <textarea class="hm-textarea" id="hm-msg" rows="4" placeholder="Yahan likhein..."></textarea>
-    <div class="hm-btns">
-      <button class="hm-cancel" onclick="closeHelp()">Wapas</button>
-      <button class="hm-submit" onclick="submitHelp()">📤 Bhejo</button>
-    </div>
-  </div>
-</div>
 <div class="toast" id="toast"></div>
 <div style="text-align:center;padding:.5rem;font-size:.6rem;color:#BBB;background:var(--cream);">
   Powered by <strong style="color:var(--mid);">VishTech Software Services</strong>
@@ -506,18 +454,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
 
 <script>
 let cust=null,sgDone=0,sgPts=0,sgDoneMap={},starRating=0;
-let pendingReg=null,shopSettings={
-  rupeePerPoint:10,welcomePoints:50,redeemValue:10,
-  milestones:[
-    {visit:5,type:'free_item',value:'Roll ya Momos'},
-    {visit:10,type:'discount_pct',value:'10'},
-    {visit:15,type:'bonus_points',value:'100'}
-  ],
-  bdayType:'free_item',bdayValue:'Roll ya Momos',
-  bdayMsg:'Aapko Birthday pe FREE Roll milega! 🎂',
-  helpActive:1,helpWa:'8619721224',
-  helpMsg:'Koi bhi problem? Hum help karenge!'
-};
+let pendingReg=null,shopSettings={rupeePerPoint:10,welcomePoints:50};
 
 // Load social tasks done state from localStorage
 function loadSgState(){
@@ -542,7 +479,7 @@ window.onload=async()=>{
   // Load shop settings (points rate)
   try{
     const s=await shopDb.shopConfig().get();
-    if(s.exists)shopSettings={...shopSettings,...s.data(),milestones:s.data().milestones||shopSettings.milestones};
+    if(s.exists)shopSettings={...shopSettings,...s.data()};
   }catch(e){}
   const saved=localStorage.getItem('rkh_cust');
   if(saved){
@@ -726,12 +663,7 @@ function loadDash(){
   if(visits>=5&&visits%5===0){if(swt)swt.textContent='Counter pe claim karo!';if(srt)srt.textContent='Claim!';document.getElementById('rwd-streak').classList.remove('locked');}
   else{if(swt)swt.textContent=`${5-(visits%5)||5} aur visits`;if(srt)srt.textContent=`${visits%5||0}/5`;document.getElementById('rwd-streak').classList.add('locked');}
   // Birthday countdown
-  if(cust.birthday){const today=new Date(),b=new Date(cust.birthday),nb=new Date(today.getFullYear(),b.getMonth(),b.getDate());if(nb<today)nb.setFullYear(today.getFullYear()+1);const dl=Math.ceil((nb-today)/(1000*60*60*24));const bc=document.getElementById('bday-countdown');if(bc&&dl<=30&&dl>0){
-      bc.classList.remove('hidden');
-      document.getElementById('bday-title').textContent=dl===1?'Kal birthday hai! 🎂':`${dl} din mein birthday! 🎂`;
-      const bdaySub=document.getElementById('bday-sub');
-      if(bdaySub&&shopSettings.bdayMsg)bdaySub.textContent=shopSettings.bdayMsg;
-    }}
+  if(cust.birthday){const today=new Date(),b=new Date(cust.birthday),nb=new Date(today.getFullYear(),b.getMonth(),b.getDate());if(nb<today)nb.setFullYear(today.getFullYear()+1);const dl=Math.ceil((nb-today)/(1000*60*60*24));const bc=document.getElementById('bday-countdown');if(bc&&dl<=30&&dl>0){bc.classList.remove('hidden');document.getElementById('bday-title').textContent=dl===1?'Kal birthday hai! 🎂':`${dl} din mein birthday! 🎂`;}}
   // Decay warning
   const lv=cust.lastVisitDays||0;if(lv>=12){document.getElementById('decay-alert').classList.remove('hidden');document.getElementById('decay-msg').textContent=lv>=20?`🚨 ${lv} din ho gaye! Jaldi aao!`:`⚠️ ${lv} din ho gaye! ${15-lv} din baad points ghate shuru honge.`;}
   // Favourites
@@ -750,49 +682,6 @@ function loadDash(){
   document.getElementById('disc-code').textContent='ROLL'+(cust.phone||'').slice(-4);
   // Load social task state
   loadSgState();
-  // Check milestone rewards
-  checkMilestoneReward(visits);
-  // Show help button if enabled
-  loadHelpButton();
-}
-
-function checkMilestoneReward(visits){
-  if(!shopSettings.milestones||!visits)return;
-  const match=shopSettings.milestones.find(m=>parseInt(m.visit)===visits);
-  if(!match||match.type==='none')return;
-  const notice=document.getElementById('milestone-notice');
-  const title=document.getElementById('milestone-title');
-  const desc=document.getElementById('milestone-desc');
-  const emoji=document.getElementById('milestone-emoji');
-  if(!notice)return;
-  notice.style.display='block';
-  const typeMap={free_item:'🎁',discount_pct:'💰',bonus_points:'⭐'};
-  if(emoji)emoji.textContent=typeMap[match.type]||'🎁';
-  if(title)title.textContent=`${match.visit}th Visit — Reward Milega!`;
-  const descMap={
-    free_item:`FREE ${match.value} — Counter pe claim karein!`,
-    discount_pct:`${match.value}% Discount aaj ke order pe!`,
-    bonus_points:`${match.value} Bonus Points mil rahe hain!`
-  };
-  if(desc)desc.textContent=descMap[match.type]||'Counter pe claim karein';
-}
-
-function loadHelpButton(){
-  if(!shopSettings.helpActive)return;
-  const section=document.getElementById('help-section');
-  const msgEl=document.getElementById('help-msg-text');
-  if(section)section.style.display='block';
-  if(msgEl&&shopSettings.helpMsg)msgEl.textContent=shopSettings.helpMsg;
-}
-
-function contactHelp(){
-  if(!cust)return;
-  const wa=shopSettings.helpWa||'8619721224';
-  const msg=encodeURIComponent(`Namaste! Main ${cust.name} hoon (ID: ${cust.id}).
-
-Mujhe help chahiye:
-`);
-  window.open(`https://wa.me/91${wa}?text=${msg}`,'_blank');
 }
 
 function shareRef(){
@@ -805,36 +694,14 @@ function shareRef(){
 
 function copyCode(){const code=document.getElementById('disc-code').textContent;navigator.clipboard.writeText(code).then(()=>toast('✅ Code copy: '+code)).catch(()=>toast('Code: '+code));}
 function logoutCustomer(){localStorage.removeItem('rkh_cust');cust=null;sgDone=0;sgPts=0;sgDoneMap={};goTo('s-welcome');toast('👋 Logout!');}
-// ===== HELP SYSTEM =====
-let helpCategory='query';
-function openHelp(cat){
-  if(!cust)return toast('⚠️ Pehle register karein!');
-  helpCategory=cat;
-  const cats={complaint:'🚫 Complaint Karein',query:'❓ Query Poochein',suggestion:'💡 Suggestion Dein',compliment:'❤️ Compliment Karein'};
-  document.getElementById('hm-title').textContent=cats[cat]||'💬 Help';
-  document.getElementById('hm-msg').value='';
-  document.getElementById('help-modal').classList.remove('hidden');
-  document.getElementById('hm-msg').focus();
-}
-function closeHelp(){document.getElementById('help-modal').classList.add('hidden');}
-async function submitHelp(){
-  const msg=document.getElementById('hm-msg').value.trim();
-  if(!msg||msg.length<5)return toast('⚠️ Kuch likhein pehle');
-  try{
-    await shopDb.helpTickets().add({
-      custId:cust.id,custName:cust.name,custPhone:cust.phone,
-      category:helpCategory,message:msg,status:'open',
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    closeHelp();
-    toast('✅ Bhej diya! Owner jald respond karega.');
-  }catch(e){toast('❌ '+e.message);}
-}
-
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 </script>
 </body>
 </html>
+
+
+
+
 
 
 
