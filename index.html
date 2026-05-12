@@ -3,12 +3,6 @@
 
 
 
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -672,7 +666,7 @@ async function completeRegistration(){
   if(!pendingReg)return;
   const {name,phone,dob,anni,city,dishes,occs,feedback,rating,ref}=pendingReg;
   const id='RKH'+Date.now().toString().slice(-6)+Math.floor(Math.random()*10);
-  const welPts=(shopSettings.welcomePoints||50);
+  const welPts=(shopSettings.welcomePoints||50)+(ref?25:0);
   const data={id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,points:welPts,visits:0,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',phoneVerified:false,joinDate:firebase.firestore.FieldValue.serverTimestamp(),joinDateStr:new Date().toLocaleDateString('en-IN'),lastVisit:firebase.firestore.FieldValue.serverTimestamp(),lastVisitDays:0,totalSpend:0,active:true,shop:'rollhub'};
   await shopDb.customer(id).set(data);
   // Referral — sirf pending record banao, admin verify karega aur referrer ko points milenge
@@ -684,15 +678,13 @@ async function completeRegistration(){
         if(curR<maxR){
           const cnt=curR+1;const bonus=cnt===1?(rr.r1||50):cnt===2?(rr.r2||70):(rr.r3||100);
           // Sirf referral record banao — referrer ka update admin karega
-          const existRef=await shopDb.referrals().where('newCust','==',id).get();
-          if(existRef.empty){
-            await shopDb.referrals().add({
+          // Direct add — ID unique hai, duplicate nahi hoga
+          await shopDb.referrals().add({
               referrer:ref,referrerPhone:rd.data().phone||'',
               newCust:id,newCustName:name,newCustPhone:phone,
               date:firebase.firestore.FieldValue.serverTimestamp(),
               bonus,status:'pending'
             });
-          }
         }
       }
     }catch(e){console.warn('Referral record error:',e);}
@@ -972,6 +964,10 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 </script>
 </body>
 </html>
+
+
+
+
 
 
 
