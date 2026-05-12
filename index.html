@@ -2,7 +2,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -632,8 +631,21 @@ async function loadExistingMember(){
   if(!phone||phone.length!==10)return toast('⚠️ 10-digit number chahiye');
   try{
     const s=await shopDb.customers().where('phone','==',phone.trim()).get();
-    if(!s.empty){cust={id:s.docs[0].id,...s.docs[0].data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));loadDash();goTo('s-dashboard');}
-    else toast('❌ Number registered nahi. Pehle register karein!');
+    if(s.empty)return toast('❌ Number registered nahi. Pehle register karein!');
+    const data=s.docs[0].data();
+    // Security: DOB verify karo — ek simple secret jo sirf customer ko pata hoga
+    const dob=prompt('Security check: Aapki Date of Birth kya hai? (YYYY-MM-DD format mein, e.g. 1998-05-12)');
+    if(!dob)return toast('❌ DOB enter karein');
+    if(!data.birthday){
+      // Old accounts without DOB — last 4 digits of phone as fallback
+      const code=prompt('Aapke phone number ke last 4 digits enter karein:');
+      if(!code||code!==phone.slice(-4))return toast('❌ Verification failed. Sahi code daalein.');
+    } else if(data.birthday.trim()!==dob.trim()){
+      return toast('❌ DOB sahi nahi. Apni actual date of birth daalein.');
+    }
+    cust={id:s.docs[0].id,...data};
+    localStorage.setItem('rkh_cust',JSON.stringify(cust));
+    loadDash();goTo('s-dashboard');
   }catch(e){toast('Error: '+e.message);}
 }
 
@@ -666,7 +678,7 @@ async function completeRegistration(){
   if(!pendingReg)return;
   const {name,phone,dob,anni,city,dishes,occs,feedback,rating,ref}=pendingReg;
   const id='RKH'+Date.now().toString().slice(-6)+Math.floor(Math.random()*10);
-  const welPts = (shopSettings.welcomePoints || 50); // सिर्फ वेलकम पॉइंट्स दें
+  const welPts=(shopSettings.welcomePoints||50)+(ref?25:0);
   const data={id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,points:welPts,visits:0,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',phoneVerified:false,joinDate:firebase.firestore.FieldValue.serverTimestamp(),joinDateStr:new Date().toLocaleDateString('en-IN'),lastVisit:firebase.firestore.FieldValue.serverTimestamp(),lastVisitDays:0,totalSpend:0,active:true,shop:'rollhub'};
   await shopDb.customer(id).set(data);
   // Referral — sirf pending record banao, admin verify karega aur referrer ko points milenge
@@ -964,7 +976,6 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 </script>
 </body>
 </html>
-
 
 
 
