@@ -6,17 +6,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -664,7 +653,7 @@ async function completeRegistration(){
   const {name,phone,dob,anni,city,dishes,occs,feedback,rating,ref}=pendingReg;
   const id='RKH'+Date.now().toString().slice(-6)+Math.floor(Math.random()*10);
   const welPts=(shopSettings.welcomePoints||50)+(ref?50:0);
-  const data={id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,points:welPts,visits:1,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',phoneVerified:false,joinDate:firebase.firestore.FieldValue.serverTimestamp(),joinDateStr:new Date().toLocaleDateString('en-IN'),lastVisit:firebase.firestore.FieldValue.serverTimestamp(),lastVisitDays:0,totalSpend:0,active:true,shop:'rollhub'};
+  const data={id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,points:welPts,visits:0,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',phoneVerified:false,joinDate:firebase.firestore.FieldValue.serverTimestamp(),joinDateStr:new Date().toLocaleDateString('en-IN'),lastVisit:firebase.firestore.FieldValue.serverTimestamp(),lastVisitDays:0,totalSpend:0,active:true,shop:'rollhub'};
   await shopDb.customer(id).set(data);
   if(ref){
     try{
@@ -788,7 +777,7 @@ function loadDash(){
     document.getElementById('decay-msg').textContent=lv>=20?`🚨 ${lv} din ho gaye! Jaldi aao — points active rakhein!`:`⚠️ ${lv} din ho gaye — aate raho!`;
   }
   // Personal offer for inactive users
-  if(lv>=15){
+  if(lv>=15&&cust.personalOffer){
     const code='BACK'+(cust.phone||'').slice(-4);
     const wrap=document.getElementById('personal-offer-wrap');
     if(wrap){
@@ -884,11 +873,12 @@ function checkMilestoneNotice(visits){
 
 async function loadVisitHistory(){
   try{
-    const txns=await shopDb.transactions().where('customerId','==',cust.id).orderBy('date','desc').limit(5).get();
+    const txns=await shopDb.transactions().where('customerId','==',cust.id).limit(10).get();
     const vh=document.getElementById('visit-history');
     if(!txns.empty){
-      vh.innerHTML=txns.docs.map(d=>{
-        const tx=d.data();let dateStr='';
+      const sorted=txns.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{try{return(b.date?.toMillis()||0)-(a.date?.toMillis()||0);}catch{return 0;}}).slice(0,5);
+      vh.innerHTML=sorted.map(tx=>{
+        let dateStr='';
         if(tx.date&&tx.date.toDate){const dt=tx.date.toDate();const today=new Date();const diff=Math.floor((today-dt)/(1000*60*60*24));dateStr=diff===0?'Aaj':diff===1?'Kal':diff+'d ago';}
         const icon=tx.type==='earn'?'🟢':tx.type==='redeem'?'🔴':'⭐';
         return`<div class="vi"><div class="vdot" style="background:${tx.type==='earn'?'var(--green)':tx.type==='redeem'?'var(--red)':'var(--yellow2)'}"></div><p>${icon} ${tx.note||tx.type} — ${tx.points>0?'+':''}${tx.points} pts</p><span>${dateStr}</span></div>`;
@@ -952,3 +942,5 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 </script>
 </body>
 </html>
+
+
