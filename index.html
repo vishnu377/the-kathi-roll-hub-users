@@ -12,13 +12,6 @@
 
 
 
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -29,6 +22,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
+try{
 firebase.initializeApp({
   apiKey:"AIzaSyCErNYguHO8s4m5aeyGRQvM_PWV_9IzJKs",
   authDomain:"the-kathi-roll-hub.firebaseapp.com",
@@ -37,17 +31,25 @@ firebase.initializeApp({
   messagingSenderId:"684649816270",
   appId:"1:684649816270:web:73dc4606b754702f6a309f"
 });
-const db=firebase.firestore();
-const shopDb={
-  customers:()=>db.collection('rollhub_customers'),
-  customer:(id)=>db.collection('rollhub_customers').doc(id),
-  referrals:()=>db.collection('rollhub_referrals'),
-  transactions:()=>db.collection('rollhub_transactions'),
-  menu:()=>db.collection('rollhub_config').doc('menu'),
-  shopConfig:()=>db.collection('rollhub_config').doc('settings'),
-  socialTasks:()=>db.collection('rollhub_socialTasks'),
-  helpTickets:()=>db.collection('rollhub_help')
-};
+}catch(e){console.warn('Firebase init error:',e);}
+let db,shopDb;
+try{
+  db=firebase.firestore();
+  shopDb={
+    customers:()=>db.collection('rollhub_customers'),
+    customer:(id)=>db.collection('rollhub_customers').doc(id),
+    referrals:()=>db.collection('rollhub_referrals'),
+    transactions:()=>db.collection('rollhub_transactions'),
+    menu:()=>db.collection('rollhub_config').doc('menu'),
+    shopConfig:()=>db.collection('rollhub_config').doc('settings'),
+    socialTasks:()=>db.collection('rollhub_socialTasks'),
+    helpTickets:()=>db.collection('rollhub_help')
+  };
+}catch(e){
+  console.warn('Firestore init error:',e);
+  // Fallback — app will work in offline mode
+  shopDb={customers:()=>null,customer:()=>null,referrals:()=>null,transactions:()=>null,menu:()=>null,shopConfig:()=>null,socialTasks:()=>null,helpTickets:()=>null};
+}
 </script>
 <style>
 :root{--yellow:#FFD600;--yellow2:#FFC000;--red:#D32F2F;--red2:#B71C1C;--dark:#1A1A1A;--green:#2E7D32;--cream:#FFFDE7;--cream2:#FFF9C4;--brown:#3E2000;--mid:#6D4C00;}
@@ -600,11 +602,17 @@ function renderFavTags(){
 document.addEventListener('click',e=>{if(!e.target.closest('.fav-search-wrap')){const dd=document.getElementById('fav-dropdown');if(dd)dd.style.display='none';}});
 
 // ===== INIT =====
-window.onload=async()=>{
+function initApp(){
   document.getElementById('r-dob').max=new Date().toISOString().split('T')[0];
+  // Firebase ready check
+  if(typeof firebase==='undefined'||!shopDb||!db){
+    document.body.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1A1A1A;color:#FFD600;font-family:DM Sans,sans-serif;text-align:center;padding:2rem;"><div><div style="font-size:2rem;margin-bottom:1rem;">🌯</div><div style="font-size:1rem;font-weight:600;">The Kathi Roll Hub</div><div style="font-size:.85rem;color:rgba(255,255,255,.6);margin-top:.5rem;">App load ho rahi hai...<br>Internet connection check karein</div><button onclick="location.reload()" style="margin-top:1.2rem;background:#FFD600;border:none;padding:.7rem 1.5rem;border-radius:50px;font-family:DM Sans,sans-serif;font-weight:700;cursor:pointer;">Reload Karein</button></div></div>';
+    return;
+  }
+  (async()=>{
   try{
     const s=await shopDb.shopConfig().get();
-    if(s.exists){
+    if(s&&s.exists){
       const d=s.data();
       shopSettings={...shopSettings,...d};
       if(d.milestones)shopSettings.milestones=d.milestones;
@@ -612,19 +620,21 @@ window.onload=async()=>{
       if(d.refRewards)shopSettings.refRewards=d.refRewards;
     }
     const m=await shopDb.menu().get();
-    if(m.exists)(m.data().items||[]).forEach(i=>{if(i.name&&!allFavItems.includes(i.name))allFavItems.push(i.name);});
+    if(m&&m.exists)(m.data().items||[]).forEach(i=>{if(i.name&&!allFavItems.includes(i.name))allFavItems.push(i.name);});
   }catch(e){}
   const saved=localStorage.getItem('rkh_cust');
   if(saved){
     cust=JSON.parse(saved);
-    try{const s=await shopDb.customer(cust.id).get();if(s.exists){cust={id:s.id,...s.data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));}}catch(e){}
+    try{const s=await shopDb.customer(cust.id).get();if(s&&s.exists){cust={id:s.id,...s.data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));}}catch(e){}
     loadDash();goTo('s-dashboard');return;
   }
   const ref=new URLSearchParams(location.search).get('ref');
   if(ref){
-    try{const rs=await shopDb.customer(ref).get();if(rs.exists){const n=document.getElementById('ref-notice');n.style.display='block';n.textContent=`👥 ${rs.data().name} ne refer kiya! ${shopSettings.welcomePoints||50} bonus points milenge!`;}}catch(e){}
+    try{const rs=await shopDb.customer(ref).get();if(rs&&rs.exists){const n=document.getElementById('ref-notice');n.style.display='block';n.textContent=`👥 ${rs.data().name} ne refer kiya! ${shopSettings.welcomePoints||50} bonus points milenge!`;}}catch(e){}
   }
-};
+  })();
+}
+window.onload=initApp;
 
 async function loadExistingMember(){
   const phone=prompt('Apna registered mobile number enter karein:');
@@ -956,3 +966,8 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 </script>
 </body>
 </html>
+
+
+
+
+
