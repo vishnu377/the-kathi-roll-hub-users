@@ -666,7 +666,7 @@ async function completeRegistration(){
   if(!pendingReg)return;
   const {name,phone,dob,anni,city,dishes,occs,feedback,rating,ref}=pendingReg;
   const id='RKH'+Date.now().toString().slice(-6)+Math.floor(Math.random()*10);
-  const welPts=(shopSettings.welcomePoints||50)+(ref?25:0);
+  const welPts = (shopSettings.welcomePoints || 50); // सिर्फ वेलकम पॉइंट्स दें
   const data={id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,points:welPts,visits:0,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',phoneVerified:false,joinDate:firebase.firestore.FieldValue.serverTimestamp(),joinDateStr:new Date().toLocaleDateString('en-IN'),lastVisit:firebase.firestore.FieldValue.serverTimestamp(),lastVisitDays:0,totalSpend:0,active:true,shop:'rollhub'};
   await shopDb.customer(id).set(data);
   // Referral — sirf pending record banao, admin verify karega aur referrer ko points milenge
