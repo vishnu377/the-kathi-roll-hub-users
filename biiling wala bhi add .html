@@ -1,0 +1,940 @@
+
+
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Kathi Roll Hub — Loyalty Club</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCErNYguHO8s4m5aeyGRQvM_PWV_9IzJKs",
+  authDomain:"the-kathi-roll-hub.firebaseapp.com",
+  projectId:"the-kathi-roll-hub",
+  storageBucket:"the-kathi-roll-hub.firebasestorage.app",
+  messagingSenderId:"684649816270",
+  appId:"1:684649816270:web:73dc4606b754702f6a309f"
+});
+const db=firebase.firestore();
+const shopDb={
+  customers:()=>db.collection('rollhub_customers'),
+  customer:(id)=>db.collection('rollhub_customers').doc(id),
+  referrals:()=>db.collection('rollhub_referrals'),
+  transactions:()=>db.collection('rollhub_transactions'),
+  menu:()=>db.collection('rollhub_config').doc('menu'),
+  shopConfig:()=>db.collection('rollhub_config').doc('settings'),
+  socialTasks:()=>db.collection('rollhub_socialTasks'),
+  helpTickets:()=>db.collection('rollhub_help')
+};
+</script>
+<style>
+:root{--yellow:#FFD600;--yellow2:#FFC000;--red:#D32F2F;--red2:#B71C1C;--dark:#1A1A1A;--green:#2E7D32;--cream:#FFFDE7;--cream2:#FFF9C4;--brown:#3E2000;--mid:#6D4C00;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);min-height:100vh;max-width:480px;margin:0 auto;}
+.screen{display:none;}
+.screen.active{display:flex;flex-direction:column;min-height:100vh;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.w-bg{background:var(--dark);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.8rem;text-align:center;position:relative;overflow:hidden;}
+.w-bg::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,214,0,.03) 0,rgba(255,214,0,.03) 1px,transparent 1px,transparent 18px);}
+.w-logo{font-family:'Oswald',sans-serif;position:relative;z-index:1;margin-bottom:1.5rem;}
+.w-logo .the{font-size:1rem;color:rgba(255,255,255,.6);letter-spacing:4px;}
+.w-logo .kathi{font-size:3rem;color:var(--yellow);line-height:1;font-weight:700;}
+.w-logo .roll{font-size:3rem;color:white;line-height:1;font-weight:700;}
+.w-logo .hub{font-size:3rem;color:var(--red);line-height:1;font-weight:700;}
+.w-logo .tagline{font-size:.8rem;color:rgba(255,255,255,.5);letter-spacing:2px;margin-top:.4rem;}
+.w-award{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,214,0,.12);border:1px solid rgba(255,214,0,.3);color:var(--yellow);padding:.4rem 1rem;border-radius:50px;font-size:.75rem;font-weight:600;margin-bottom:1.3rem;position:relative;z-index:1;}
+.w-chips{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:center;margin-bottom:1.6rem;position:relative;z-index:1;}
+.chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.85);padding:.28rem .75rem;border-radius:50px;font-size:.72rem;}
+.w-open{background:var(--red);color:white;padding:.25rem .75rem;border-radius:50px;font-size:.72rem;font-weight:700;letter-spacing:1px;display:inline-block;margin-bottom:.8rem;position:relative;z-index:1;}
+.btn-join{background:linear-gradient(135deg,var(--yellow),var(--yellow2));color:var(--dark);border:none;padding:.9rem 2.2rem;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 6px 24px rgba(255,214,0,.4);transition:all .25s;position:relative;z-index:1;}
+.w-member{color:rgba(255,255,255,.45);font-size:.78rem;margin-top:.9rem;cursor:pointer;text-decoration:underline;position:relative;z-index:1;}
+.form-header{background:var(--dark);padding:1.3rem 1.5rem 2.2rem;color:white;position:relative;overflow:hidden;}
+.form-header::after{content:'';position:absolute;bottom:-20px;left:0;right:0;height:40px;background:var(--cream);border-radius:50% 50% 0 0/100% 100% 0 0;}
+.back-btn{background:none;border:none;color:rgba(255,255,255,.6);font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.3rem;margin-bottom:.5rem;font-family:'DM Sans',sans-serif;}
+.fh-title{font-family:'Oswald',sans-serif;font-size:1.6rem;color:var(--yellow);}
+.fh-sub{font-size:.77rem;color:rgba(255,255,255,.55);margin-top:.2rem;}
+.form-body{padding:2rem 1.5rem 1.5rem;flex:1;}
+.fsec{font-size:.68rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1.5px;margin:1.4rem 0 .7rem;display:flex;align-items:center;gap:.5rem;}
+.fsec::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--red),transparent);opacity:.3;}
+.fg{margin-bottom:.85rem;}
+.fg label{display:block;font-size:.77rem;font-weight:500;color:var(--mid);margin-bottom:.3rem;}
+.fg label em{color:var(--red);}
+.fc{width:100%;padding:.73rem .9rem;border:1.5px solid #E0CC80;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--brown);background:white;outline:none;transition:border-color .2s;}
+.fc:focus{border-color:var(--yellow2);}
+.fc::placeholder{color:#B8A040;}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+.dish-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-top:.4rem;}
+.dopt{position:relative;}
+.dopt input{position:absolute;opacity:0;width:0;height:0;}
+.dopt label{display:flex;flex-direction:column;align-items:center;padding:.55rem .3rem;border:1.5px solid #E0CC80;border-radius:10px;cursor:pointer;transition:all .2s;background:white;font-size:.67rem;text-align:center;}
+.dopt label .de{font-size:1.35rem;margin-bottom:.15rem;}
+.dopt input:checked+label{border-color:var(--yellow2);background:rgba(255,214,0,.1);color:var(--mid);}
+.occ-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem;}
+.oopt{position:relative;}
+.oopt input{position:absolute;opacity:0;}
+.oopt label{display:flex;align-items:center;gap:.4rem;padding:.6rem;border:1.5px solid #E0CC80;border-radius:10px;cursor:pointer;font-size:.77rem;transition:all .2s;background:white;margin:0;}
+.oopt input:checked+label{border-color:var(--green);background:rgba(46,125,50,.06);color:var(--green);}
+.stars{display:flex;gap:.4rem;margin-top:.3rem;}
+.star{background:none;border:none;font-size:1.8rem;cursor:pointer;color:#DDD;transition:color .15s;}
+.star.on{color:var(--yellow2);}
+.btn-sub{width:100%;background:linear-gradient(135deg,var(--red),var(--red2));color:white;border:none;padding:.9rem;border-radius:14px;font-size:.93rem;font-weight:600;cursor:pointer;margin-top:1.3rem;font-family:'DM Sans',sans-serif;}
+.btn-sub:disabled{opacity:.55;cursor:not-allowed;}
+.fav-search-wrap{position:relative;margin-bottom:.6rem;}
+.fav-search-input{width:100%;padding:.65rem .9rem;border:1.5px solid #E0CC80;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.84rem;color:var(--brown);background:white;outline:none;}
+.fav-search-input:focus{border-color:var(--yellow2);}
+.fav-dropdown{position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid #E0CC80;border-top:none;border-radius:0 0 10px 10px;max-height:160px;overflow-y:auto;z-index:50;box-shadow:0 8px 20px rgba(0,0,0,.1);display:none;}
+.fav-opt{padding:.55rem .9rem;font-size:.82rem;color:var(--brown);cursor:pointer;border-bottom:1px solid #F5EDD0;}
+.fav-opt:last-child{border:none;}
+.fav-opt:hover{background:var(--cream2);}
+.fav-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;}
+.fav-tag{background:var(--cream2);border:1px solid rgba(255,214,0,.5);color:var(--brown);padding:.28rem .65rem;border-radius:50px;font-size:.73rem;font-weight:500;display:inline-flex;align-items:center;gap:.3rem;}
+.fav-tag-x{cursor:pointer;color:var(--red);font-weight:700;line-height:1;margin-left:2px;}
+.sg-bg{background:var(--dark);flex:1;padding:2.2rem 1.5rem;}
+.sg-title{font-family:'Oswald',sans-serif;font-size:1.8rem;color:var(--yellow);text-align:center;margin-bottom:.3rem;}
+.sg-sub{color:rgba(255,255,255,.5);font-size:.83rem;text-align:center;margin-bottom:1.6rem;}
+.task-card{display:flex;align-items:center;gap:1rem;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:1rem 1.1rem;margin-bottom:.7rem;cursor:pointer;transition:all .22s;}
+.task-card.done{border-color:rgba(46,125,50,.5);background:rgba(46,125,50,.08);}
+.task-icon{font-size:1.5rem;flex-shrink:0;}
+.task-info h4{font-size:.88rem;font-weight:600;color:white;}
+.task-info p{font-size:.71rem;color:rgba(255,255,255,.5);margin-top:.1rem;}
+.task-pts{font-size:.8rem;font-weight:600;color:var(--yellow);}
+.task-check{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;}
+.task-card.done .task-check{background:var(--green);border-color:var(--green);color:white;}
+.sg-progress{background:rgba(255,255,255,.07);border-radius:10px;padding:1rem;margin-top:.8rem;}
+.sgp-row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.6rem;}
+.sgp-row span:first-child{color:rgba(255,255,255,.5);}
+.sgp-row span:last-child{color:var(--yellow);font-weight:600;}
+.sgp-track{height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
+.sgp-fill{height:100%;border-radius:4px;background:var(--yellow);transition:width .4s ease;}
+.btn-unlock{width:100%;background:var(--yellow);border:none;border-radius:14px;padding:.9rem;color:var(--dark);font-size:.95rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.9rem;}
+.skip-link{text-align:center;color:rgba(255,255,255,.35);font-size:.78rem;margin-top:.8rem;cursor:pointer;text-decoration:underline;}
+.offer-hero{background:linear-gradient(135deg,var(--red),#FF6F00);padding:2.6rem 1.8rem 3.3rem;text-align:center;position:relative;overflow:hidden;}
+.offer-hero::before{content:'🌮';position:absolute;font-size:8rem;opacity:.08;top:-10px;right:-15px;transform:rotate(20deg);}
+.offer-hero::after{content:'';position:absolute;bottom:-22px;left:0;right:0;height:44px;background:var(--cream);border-radius:50% 50% 0 0/100% 100% 0 0;}
+.oh-welcome{color:rgba(255,255,255,.88);font-size:.85rem;margin-bottom:.2rem;}
+.oh-name{font-family:'Oswald',sans-serif;font-size:1.8rem;color:var(--yellow);font-weight:700;}
+.confetti{font-size:2rem;display:block;margin-bottom:.5rem;animation:bounce 1s ease infinite alternate;}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.offer-body{padding:1.6rem 1.5rem;flex:1;}
+.oc{background:white;border-radius:18px;padding:1.4rem;margin-bottom:.9rem;box-shadow:0 3px 18px rgba(0,0,0,.07);border:1px solid rgba(255,214,0,.25);position:relative;overflow:hidden;}
+.oc::before{content:'';position:absolute;top:0;left:0;width:5px;height:100%;background:var(--yellow);}
+.oc-badge{background:var(--red);color:white;font-family:'Oswald',sans-serif;font-size:2rem;font-weight:700;display:inline-block;padding:.3rem 1.1rem;border-radius:10px;margin-bottom:.65rem;}
+.oc h3{font-size:.95rem;font-weight:600;color:var(--brown);margin-bottom:.3rem;}
+.oc p{font-size:.8rem;color:var(--mid);line-height:1.5;}
+.code-box{background:var(--cream2);border:2px dashed var(--yellow2);border-radius:11px;padding:.7rem 1rem;margin-top:.85rem;display:flex;align-items:center;justify-content:space-between;}
+.code-val{font-size:1.25rem;font-weight:700;letter-spacing:3px;color:var(--brown);font-family:'Oswald',sans-serif;}
+.copy-btn{background:var(--yellow2);border:none;border-radius:8px;padding:.3rem .75rem;font-size:.72rem;font-weight:600;cursor:pointer;color:var(--brown);font-family:'DM Sans',sans-serif;}
+.ref-card{background:var(--dark);border-radius:18px;padding:1.4rem;margin-bottom:.9rem;color:white;}
+.ref-card h3{font-family:'Oswald',sans-serif;font-size:1.2rem;color:var(--yellow);margin-bottom:.4rem;}
+.ref-card p{color:rgba(255,255,255,.65);font-size:.8rem;line-height:1.5;margin-bottom:.85rem;}
+.ref-tiers{display:flex;gap:.5rem;margin-bottom:.85rem;}
+.rt{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,214,0,.2);border-radius:9px;padding:.5rem .3rem;text-align:center;}
+.rt-num{font-size:1rem;font-weight:700;color:var(--yellow);display:block;font-family:'Oswald',sans-serif;}
+.rt-label{font-size:.6rem;color:rgba(255,255,255,.55);margin-top:.1rem;}
+.rt.hl{background:rgba(255,214,0,.12);border-color:rgba(255,214,0,.5);}
+.share-btn{width:100%;background:var(--yellow);border:none;padding:.78rem;border-radius:12px;color:var(--dark);font-size:.88rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-dash{width:100%;background:var(--green);color:white;border:none;padding:.9rem;border-radius:14px;font-size:.92rem;font-weight:600;cursor:pointer;margin-top:.5rem;font-family:'DM Sans',sans-serif;}
+.dash-header{background:var(--dark);padding:1.3rem 1.5rem;color:white;position:relative;overflow:hidden;}
+.dash-header::after{content:'';position:absolute;bottom:-18px;left:0;right:0;height:36px;background:var(--cream);border-radius:50% 50% 0 0/100% 100% 0 0;}
+.dh-greet{font-size:.73rem;color:rgba(255,255,255,.5);margin-bottom:.1rem;}
+.dh-name{font-family:'Oswald',sans-serif;font-size:1.5rem;color:var(--yellow);}
+.dh-pill{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,214,0,.15);border:1px solid rgba(255,214,0,.3);color:var(--yellow);padding:.25rem .85rem;border-radius:50px;font-size:.74rem;margin-top:.4rem;}
+.dh-tier{display:inline-block;margin-left:.5rem;font-size:.68rem;padding:.12rem .45rem;border-radius:4px;background:rgba(255,255,255,.12);vertical-align:middle;}
+.dash-body{padding:1.5rem 1.5rem 2rem;flex:1;}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin-bottom:1.2rem;}
+.stat-c{background:white;border-radius:12px;padding:.85rem .65rem;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06);border-top:3px solid var(--yellow);}
+.stat-c .sn{font-family:'Oswald',sans-serif;font-size:1.4rem;font-weight:700;color:var(--red);display:block;}
+.stat-c .sl{font-size:.6rem;color:#999;margin-top:.1rem;}
+.sec-head{font-size:.73rem;font-weight:700;color:var(--brown);text-transform:uppercase;letter-spacing:1px;margin-bottom:.65rem;}
+.tier-card{background:var(--dark);border-radius:18px;padding:1.4rem;margin-bottom:1rem;color:white;}
+.tier-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.8rem;}
+.tier-pts{font-family:'Oswald',sans-serif;font-size:3rem;font-weight:700;color:var(--yellow);line-height:1;}
+.tier-badge-big{background:rgba(255,214,0,.15);border:1px solid rgba(255,214,0,.3);color:var(--yellow);padding:.4rem .9rem;border-radius:50px;font-size:.8rem;font-weight:600;}
+.tier-bar{height:8px;background:rgba(255,255,255,.1);border-radius:8px;overflow:hidden;margin:.5rem 0;}
+.tier-fill{height:100%;background:var(--yellow);border-radius:8px;transition:width 1.2s ease;}
+.tier-label{display:flex;justify-content:space-between;font-size:.62rem;color:rgba(255,255,255,.4);}
+.tier-next{font-size:.78rem;color:rgba(255,255,255,.7);margin-top:.5rem;font-weight:500;}
+.streak-card{background:white;border-radius:16px;padding:1.1rem;margin-bottom:.9rem;border-left:5px solid var(--yellow);box-shadow:0 2px 10px rgba(0,0,0,.06);}
+.streak-top{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem;}
+.streak-num{font-family:'Oswald',sans-serif;font-size:2rem;font-weight:700;color:var(--red);}
+.streak-label{font-size:.82rem;font-weight:600;color:var(--brown);}
+.streak-sub{font-size:.72rem;color:var(--mid);}
+.streak-dots{display:flex;gap:.4rem;flex-wrap:wrap;}
+.sdot{width:32px;height:32px;border-radius:50%;background:var(--cream2);border:2px solid #E0CC80;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#CCC;}
+.sdot.filled{background:var(--red);border-color:var(--red);color:white;}
+.sdot.target{background:rgba(255,214,0,.15);border-color:var(--yellow2);color:var(--mid);font-size:.65rem;font-weight:700;}
+.bday-banner{background:rgba(211,47,47,.08);border:1.5px solid rgba(211,47,47,.2);border-radius:14px;padding:.9rem 1rem;margin-bottom:.9rem;display:none;align-items:center;gap:.75rem;}
+.anni-banner{background:linear-gradient(135deg,rgba(106,27,154,.08),rgba(74,20,140,.04));border:1.5px solid rgba(179,136,255,.3);border-radius:14px;padding:.9rem 1rem;margin-bottom:.9rem;display:none;align-items:center;gap:.75rem;}
+.decay-warn{background:rgba(211,47,47,.1);border:1.5px solid rgba(211,47,47,.25);border-radius:12px;padding:.8rem 1rem;margin-bottom:.9rem;display:none;align-items:center;gap:.7rem;}
+.decay-warn .dt{font-size:.77rem;color:var(--red);font-weight:500;line-height:1.4;}
+.rwd-list{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.2rem;}
+.rwd{background:white;border-radius:13px;padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;box-shadow:0 2px 10px rgba(0,0,0,.05);border-left:4px solid var(--yellow2);}
+.rwd.used{opacity:.4;border-left-color:#DDD;}
+.rwd.locked{opacity:.6;border-left-color:#EEE;}
+.rwd-icon{font-size:1.7rem;flex-shrink:0;}
+.rwd-info h4{font-size:.84rem;font-weight:600;color:var(--brown);}
+.rwd-info p{font-size:.7rem;color:#999;margin-top:.1rem;}
+.rwd-tag{margin-left:auto;background:var(--cream2);color:var(--brown);padding:.22rem .6rem;border-radius:50px;font-size:.7rem;font-weight:700;flex-shrink:0;}
+.ref-prog{background:white;border-radius:16px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:1.2rem;}
+.ref-earn-msg{font-size:.88rem;font-weight:600;color:var(--brown);margin-bottom:.3rem;}
+.ref-dots{display:flex;gap:.5rem;flex-wrap:wrap;margin:.65rem 0;}
+.rdot{width:36px;height:36px;border-radius:50%;border:2px solid #E0CC80;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#CCC;}
+.rdot.filled{border-color:var(--green);background:rgba(46,125,50,.1);color:var(--green);}
+.prog-bar{height:5px;background:#F0E8A0;border-radius:50px;overflow:hidden;margin:.4rem 0;}
+.prog-fill{height:100%;background:linear-gradient(to right,var(--yellow2),var(--green));border-radius:50px;}
+.prog-text{font-size:.7rem;color:#999;}
+.fav-section{background:white;border-radius:16px;padding:1rem;margin-bottom:.9rem;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.fav-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;}
+.fav-chip{background:var(--cream2);color:var(--brown);padding:.28rem .75rem;border-radius:50px;font-size:.73rem;font-weight:500;border:1px solid rgba(255,214,0,.4);}
+.menu-dash{background:white;border-radius:16px;padding:1rem;margin-bottom:.9rem;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.mi-row{display:flex;align-items:center;gap:.65rem;padding:.5rem 0;border-bottom:1px solid #F5EDD0;}
+.mi-row:last-child{border:none;}
+.mi-badge-sm{font-size:.68rem;font-weight:700;padding:.18rem .5rem;border-radius:6px;background:rgba(211,47,47,.1);color:var(--red);margin-left:auto;flex-shrink:0;}
+.visits-card{background:white;border-radius:16px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.vi{display:flex;align-items:center;gap:.65rem;padding:.5rem 0;border-bottom:1px solid #F5EDD0;}
+.vi:last-child{border:none;}
+.vdot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;}
+.vi p{font-size:.77rem;color:var(--brown);flex:1;}
+.vi span{font-size:.67rem;color:#BBB;}
+.share-btn-red{width:100%;background:linear-gradient(135deg,var(--red),#FF6F00);border:none;padding:.78rem;border-radius:12px;color:white;font-size:.86rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem;font-family:'DM Sans',sans-serif;}
+.special-offer-banner{background:linear-gradient(135deg,#1a0800,#2d1500);border:2px solid var(--yellow2);border-radius:16px;padding:1rem 1.1rem;margin-bottom:.9rem;position:relative;overflow:hidden;}
+.special-offer-banner::before{content:'🎁';position:absolute;right:-5px;top:-10px;font-size:4rem;opacity:.12;}
+.xp-section{background:linear-gradient(135deg,#1a0800,#2d1200);border-radius:16px;padding:1rem 1.1rem;margin-bottom:.9rem;color:white;}
+.xp-title{font-size:.72rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:.4rem;}
+.xp-bar-wrap{height:10px;background:rgba(255,255,255,.1);border-radius:8px;overflow:hidden;margin-bottom:.35rem;}
+.xp-bar{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--yellow),var(--red));transition:width 1.5s ease;}
+.xp-label{display:flex;justify-content:space-between;font-size:.68rem;color:rgba(255,255,255,.5);}
+.help-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:flex;align-items:flex-end;justify-content:center;}
+.help-modal.hidden{display:none;}
+.hm-box{background:var(--cream);border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-width:480px;}
+.hm-title{font-family:'Oswald',sans-serif;font-size:1.2rem;color:var(--brown);margin-bottom:1rem;}
+.hm-textarea{width:100%;border:1.5px solid #E0CC80;border-radius:12px;padding:.8rem;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--brown);background:white;resize:none;outline:none;margin-bottom:.8rem;}
+.hm-btns{display:flex;gap:.7rem;}
+.hm-submit{flex:1;background:var(--red);color:white;border:none;border-radius:12px;padding:.8rem;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;}
+.hm-cancel{background:rgba(0,0,0,.08);border:none;border-radius:12px;padding:.8rem 1.2rem;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;color:var(--brown);}
+.ms-popup{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;display:flex;align-items:center;justify-content:center;padding:1.5rem;}
+.ms-popup.hidden{display:none;}
+.ms-box{background:var(--cream);border-radius:22px;padding:2rem;text-align:center;max-width:320px;width:100%;position:relative;}
+.ms-close{position:absolute;top:.8rem;right:.9rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#999;}
+.ms-emoji{font-size:3.5rem;display:block;margin-bottom:.6rem;animation:bounce 1s ease infinite alternate;}
+.toast{position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);color:var(--yellow);padding:.7rem 1.3rem;border-radius:50px;font-size:.8rem;font-weight:600;z-index:9999;transition:transform .3s ease;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: WELCOME -->
+<div class="screen active" id="s-welcome">
+  <div class="w-bg">
+    <div class="w-open">🕐 24x7 OPEN</div>
+    <div class="w-logo">
+      <div class="the">THE</div><div class="kathi">KATHI</div>
+      <div class="roll">ROLL</div><div class="hub">HUB</div>
+      <div class="tagline">THE REAL TASTE OF KATHI ROLL</div>
+    </div>
+    <div class="w-award">⭐ Zomato Top 10 Rolls — Jaipur 2025</div>
+    <div class="w-chips">
+      <span class="chip">🌯 Kathi Rolls</span><span class="chip">🥟 Momos</span>
+      <span class="chip">🍜 Chinese</span><span class="chip">🧃 Shakes</span>
+    </div>
+    <p style="color:rgba(255,255,255,.6);font-size:.82rem;margin-bottom:1.4rem;line-height:1.6;position:relative;z-index:1;">Loyalty Club join karo — FREE mein!<br><strong style="color:var(--yellow);">10% OFF + Birthday Gift + Points Rewards</strong></p>
+    <button class="btn-join" onclick="goTo('s-register')">🚀 Join & Get 10% OFF</button>
+    <div class="w-member" onclick="loadExistingMember()">Pehle se member hain? Dashboard →</div>
+  </div>
+</div>
+
+<!-- SCREEN 2: REGISTER -->
+<div class="screen" id="s-register">
+  <div class="form-header">
+    <button class="back-btn" onclick="goTo('s-welcome')">← Back</button>
+    <div class="fh-title">JOIN LOYALTY CLUB</div>
+    <div class="fh-sub">Register karo — free forever</div>
+  </div>
+  <div class="form-body">
+    <div id="ref-notice" style="display:none;background:rgba(255,214,0,.15);border:1px solid var(--yellow2);color:var(--brown);padding:.7rem 1rem;border-radius:10px;margin-bottom:1rem;font-size:.82rem;font-weight:500;"></div>
+    <div class="fsec">👤 Personal Info</div>
+    <div class="fg"><label>Full Name <em>*</em></label><input class="fc" id="r-name" placeholder="Aapka naam..."></div>
+    <div class="fg2">
+      <div class="fg"><label>Mobile <em>*</em></label><input class="fc" id="r-phone" type="tel" placeholder="9876543210" maxlength="10" inputmode="numeric"></div>
+      <div class="fg"><label>Date of Birth <em>*</em></label><input class="fc" id="r-dob" type="date"></div>
+    </div>
+    <div class="fg2">
+      <div class="fg"><label>Anniversary</label><input class="fc" id="r-anni" type="date"></div>
+      <div class="fg"><label>Area / Mohalla</label><input class="fc" id="r-city" placeholder="e.g. Murlipura..."></div>
+    </div>
+    <div class="fsec">🌯 Favourite Items</div>
+    <div class="fav-search-wrap">
+      <input class="fav-search-input" id="fav-search" placeholder="🔍 Item search karein ya naam likhein..." oninput="filterFavDrop()" autocomplete="off">
+      <div id="fav-dropdown" class="fav-dropdown"></div>
+    </div>
+    <div class="fav-tags" id="reg-fav-tags"></div>
+    <div class="dish-grid" id="dish-grid" style="margin-top:.6rem;">
+      <div class="dopt"><input type="checkbox" id="d1" value="Paneer Roll" onchange="syncFavChk(this)"><label for="d1"><span class="de">🧀</span>Paneer Roll</label></div>
+      <div class="dopt"><input type="checkbox" id="d2" value="Aloo Roll" onchange="syncFavChk(this)"><label for="d2"><span class="de">🥔</span>Aloo Roll</label></div>
+      <div class="dopt"><input type="checkbox" id="d3" value="Chaap Roll" onchange="syncFavChk(this)"><label for="d3"><span class="de">🌯</span>Chaap Roll</label></div>
+      <div class="dopt"><input type="checkbox" id="d4" value="Steam Momos" onchange="syncFavChk(this)"><label for="d4"><span class="de">🥟</span>Steam Momos</label></div>
+      <div class="dopt"><input type="checkbox" id="d5" value="Fried Momos" onchange="syncFavChk(this)"><label for="d5"><span class="de">🍤</span>Fried Momos</label></div>
+      <div class="dopt"><input type="checkbox" id="d6" value="Gravy Momos" onchange="syncFavChk(this)"><label for="d6"><span class="de">🍲</span>Gravy Momos</label></div>
+      <div class="dopt"><input type="checkbox" id="d7" value="Cold Coffee" onchange="syncFavChk(this)"><label for="d7"><span class="de">☕</span>Cold Coffee</label></div>
+      <div class="dopt"><input type="checkbox" id="d8" value="Chocolate Shake" onchange="syncFavChk(this)"><label for="d8"><span class="de">🥤</span>Choco Shake</label></div>
+      <div class="dopt"><input type="checkbox" id="d9" value="Noodles" onchange="syncFavChk(this)"><label for="d9"><span class="de">🍜</span>Noodles</label></div>
+    </div>
+    <div class="fsec">🎉 Kab Aate Hain?</div>
+    <div class="occ-grid">
+      <div class="oopt"><input type="checkbox" id="o1" value="Dost ke saath"><label for="o1">👫 Dost ke saath</label></div>
+      <div class="oopt"><input type="checkbox" id="o2" value="Family ke saath"><label for="o2">👨‍👩‍👧 Family</label></div>
+      <div class="oopt"><input type="checkbox" id="o3" value="College ke baad"><label for="o3">🎓 College</label></div>
+      <div class="oopt"><input type="checkbox" id="o4" value="Office lunch"><label for="o4">💼 Office</label></div>
+      <div class="oopt"><input type="checkbox" id="o5" value="Raat ko"><label for="o5">🌙 Raat ko</label></div>
+      <div class="oopt"><input type="checkbox" id="o6" value="Party"><label for="o6">🎉 Party</label></div>
+    </div>
+    <div class="fsec">⭐ Rate Karo</div>
+    <div class="stars" id="stars">
+      <button class="star" onclick="setStar(1)">★</button><button class="star" onclick="setStar(2)">★</button>
+      <button class="star" onclick="setStar(3)">★</button><button class="star" onclick="setStar(4)">★</button>
+      <button class="star" onclick="setStar(5)">★</button>
+    </div>
+    <div class="fg" style="margin-top:.85rem;"><label>Feedback (optional)</label><textarea class="fc" id="r-feedback" rows="2" placeholder="Kuch kehna hai..."></textarea></div>
+    <button class="btn-sub" id="sub-btn" onclick="submitReg()">🎁 Register & Get Discount</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: SOCIAL -->
+<div class="screen" id="s-social">
+  <div class="sg-bg">
+    <div style="font-size:2.8rem;text-align:center;margin-bottom:.5rem;">🎉</div>
+    <div class="sg-title">REGISTERED!</div>
+    <div class="sg-sub">Social pe connect karo — bonus points pao</div>
+    <div class="task-card" id="t-ig" onclick="doTask('ig',25,'https://www.instagram.com/the_kathi_roll_hub_murlipuraa')">
+      <div class="task-icon">📸</div><div class="task-info"><h4>Instagram Follow Karo</h4><p>@the_kathi_roll_hub_murlipuraa</p></div>
+      <div class="task-pts">+25 pts</div><div class="task-check" id="tc-ig">→</div>
+    </div>
+    <div class="task-card" id="t-gg" onclick="doTask('gg',30,'https://maps.app.goo.gl/YcMkgZpTJ9hy8MDf8')">
+      <div class="task-icon">⭐</div><div class="task-info"><h4>Google Review Do (5★)</h4><p>Zomato Top 10 ko aur upar!</p></div>
+      <div class="task-pts">+30 pts</div><div class="task-check" id="tc-gg">→</div>
+    </div>
+    <div class="task-card" id="t-wa" onclick="doTask('wa',20,'https://wa.me/918619721224')">
+      <div class="task-icon">💬</div><div class="task-info"><h4>WhatsApp pe Contact Karo</h4><p>Daily offers sabse pehle milenge</p></div>
+      <div class="task-pts">+20 pts</div><div class="task-check" id="tc-wa">→</div>
+    </div>
+    <div class="task-card" id="t-zom" onclick="doTask('zom',20,'https://zomato.com/jaipur/the-kathi-roll-hub')">
+      <div class="task-icon">🍴</div><div class="task-info"><h4>Zomato pe Follow Karo</h4><p>Online orders pe bhi discount</p></div>
+      <div class="task-pts">+20 pts</div><div class="task-check" id="tc-zom">→</div>
+    </div>
+    <div class="sg-progress">
+      <div class="sgp-row"><span id="sg-done-lbl">0 of 4</span><span id="sg-pts-lbl">+0 pts pending</span></div>
+      <div class="sgp-track"><div class="sgp-fill" id="sg-fill" style="width:0%"></div></div>
+    </div>
+    <div style="background:rgba(255,214,0,.08);border:1px solid rgba(255,214,0,.2);border-radius:10px;padding:.8rem;margin-top:.8rem;">
+      <p style="font-size:.73rem;color:rgba(255,255,255,.6);line-height:1.5;">⏳ Admin verify karega — 1-2 din mein points credit honge. Real kaam ke liye real reward!</p>
+    </div>
+    <button class="btn-unlock" onclick="goTo('s-offer')" style="margin-top:.9rem;">🎁 Apna Welcome Offer Dekho →</button>
+    <div class="skip-link" onclick="goTo('s-offer')">Skip karein</div>
+  </div>
+</div>
+
+<!-- SCREEN 4: OFFER -->
+<div class="screen" id="s-offer">
+  <div class="offer-hero">
+    <span class="confetti">🌯</span>
+    <div class="oh-welcome">Welcome to the family,</div>
+    <div class="oh-name" id="offer-name">Ji! 🌯</div>
+  </div>
+  <div class="offer-body">
+    <div class="oc">
+      <div class="oc-badge">10% OFF</div>
+      <h3>🎁 Welcome Discount</h3>
+      <p>Aaj ya agli visit pe 10% off. Counter pe yeh code dikhao!</p>
+      <div class="code-box"><span class="code-val" id="disc-code">ROLL10</span><button class="copy-btn" onclick="copyCode()">📋 Copy</button></div>
+    </div>
+    <div class="oc" style="border-left-color:var(--red);">
+      <div class="oc-badge" style="background:var(--yellow2);color:var(--dark);font-size:1.8rem;">🎂 FREE</div>
+      <h3>Birthday Special!</h3>
+      <p id="offer-bday-text">Birthday month mein FREE Roll ya Momos + 15% off!</p>
+    </div>
+    <div class="oc" style="border-left-color:var(--green);">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;"><span style="font-size:1.5rem;">🔥</span><h3 style="margin:0;" id="offer-ms-title">5th Visit Pe FREE!</h3></div>
+      <p id="offer-ms-text">Har milestone visit pe special reward. Aate raho!</p>
+    </div>
+    <div class="ref-card">
+      <h3 id="offer-ref-title">👥 Refer Karo — Earn Karo!</h3>
+      <p id="offer-ref-text">Doston ko refer karo — har referral pe reward!</p>
+      <div class="ref-tiers" id="offer-ref-tiers">
+        <div class="rt"><span class="rt-num">1</span><div class="rt-label">Reward</div></div>
+        <div class="rt"><span class="rt-num">2</span><div class="rt-label">Reward+</div></div>
+        <div class="rt hl"><span class="rt-num">3</span><div class="rt-label">Special!</div></div>
+      </div>
+      <button class="share-btn" onclick="shareRef()">📤 Referral Link Share Karo</button>
+    </div>
+    <button class="btn-dash" onclick="goTo('s-dashboard')">📊 Mera Dashboard Dekho</button>
+  </div>
+</div>
+
+<!-- SCREEN 5: DASHBOARD -->
+<div class="screen" id="s-dashboard">
+  <div class="dash-header">
+    <div class="dh-greet">Namaste! Welcome back 🌯</div>
+    <div class="dh-name" id="dash-name">Loading... <span class="dh-tier" id="dash-tier"></span></div>
+    <div style="font-size:.68rem;color:rgba(255,255,255,.4);margin-top:.1rem;" id="verified-badge-wrap"></div>
+    <div class="dh-pill">⭐ <span id="dash-pts">0</span> Points</div>
+  </div>
+  <div class="dash-body">
+    <!-- Personal offer for inactive users -->
+    <div id="personal-offer-wrap"></div>
+    <!-- Anniversary banner -->
+    <div class="anni-banner" id="anni-banner">
+      <span style="font-size:1.6rem">💑</span>
+      <div><h4 id="anni-title" style="font-size:.88rem;font-weight:600;color:var(--brown);margin-bottom:.15rem;">Anniversary aa rahi hai!</h4>
+      <p id="anni-sub" style="font-size:.75rem;color:var(--mid);">Special treat aapka wait!</p></div>
+    </div>
+    <!-- Birthday countdown -->
+    <div class="bday-banner" id="bday-countdown">
+      <span style="font-size:1.6rem">🎂</span>
+      <div><h4 id="bday-title" style="font-size:.88rem;font-weight:600;color:var(--brown);margin-bottom:.15rem;">Birthday aa rahi hai!</h4>
+      <p id="bday-sub" style="font-size:.75rem;color:var(--mid);">Special reward aapka wait!</p></div>
+    </div>
+    <!-- Decay warning -->
+    <div class="decay-warn" id="decay-alert">
+      <span style="font-size:1.1rem">⚠️</span>
+      <div class="dt" id="decay-msg">Aate raho!</div>
+    </div>
+    <div class="stats3">
+      <div class="stat-c"><span class="sn" id="d-visits">0</span><div class="sl">Visits</div></div>
+      <div class="stat-c"><span class="sn" id="d-saved">₹0</span><div class="sl">Saved</div></div>
+      <div class="stat-c"><span class="sn" id="d-refs">0</span><div class="sl">Referrals</div></div>
+    </div>
+    <!-- Gamification XP -->
+    <div class="xp-section">
+      <div class="xp-title">🎮 Loyalty Progress</div>
+      <div class="xp-bar-wrap"><div class="xp-bar" id="xp-bar" style="width:0%"></div></div>
+      <div class="xp-label"><span id="xp-from">Level 1</span><span id="xp-next-label">🎯 Next reward</span></div>
+    </div>
+    <div class="tier-card">
+      <div class="tier-top">
+        <div><div style="font-size:.7rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:.2rem;">Loyalty Points</div>
+        <div class="tier-pts" id="pts-big">0</div></div>
+        <div class="tier-badge-big" id="tier-badge">🥈 Silver</div>
+      </div>
+      <div class="tier-label"><span id="tier-from">Silver</span><span id="tier-to">Gold (300)</span></div>
+      <div class="tier-bar"><div class="tier-fill" id="pts-fill" style="width:0%"></div></div>
+      <div class="tier-next" id="tier-next">Gold ke liye 300 aur points!</div>
+    </div>
+    <!-- Dynamic streak card -->
+    <div class="streak-card">
+      <div class="streak-top">
+        <div class="streak-num" id="streak-num">0</div>
+        <div><div class="streak-label">Visit Streak 🔥</div><div class="streak-sub" id="streak-sub">Aate raho — rewards milenge!</div></div>
+      </div>
+      <div class="streak-dots" id="streak-dots"></div>
+      <div id="streak-next-hint" style="font-size:.7rem;color:var(--mid);margin-top:.5rem;"></div>
+    </div>
+    <!-- Fav items -->
+    <div class="fav-section" id="fav-section" style="display:none">
+      <div class="sec-head">❤️ Favourite Items</div>
+      <div class="fav-chips" id="fav-chips"></div>
+    </div>
+    <!-- Menu offers from admin -->
+    <div class="menu-dash" id="menu-dash" style="display:none">
+      <div class="sec-head">🌯 Special Offers — Aaj ke Liye!</div>
+      <div id="menu-dash-items"></div>
+    </div>
+    <div class="sec-head">🎁 Mere Rewards</div>
+    <div class="rwd-list">
+      <div class="rwd" id="rwd-bday">
+        <span class="rwd-icon">🎂</span>
+        <div class="rwd-info"><h4>Birthday Special</h4><p id="bday-rwd-sub">FREE Roll/Momos + 15% off</p></div>
+        <span class="rwd-tag">FREE</span>
+      </div>
+      <div class="rwd locked" id="rwd-streak">
+        <span class="rwd-icon">🔥</span>
+        <div class="rwd-info"><h4 id="streak-rwd-title">Visit Milestone Reward</h4><p id="streak-rwd-text">5th visit pe FREE Roll ya Momos!</p></div>
+        <span class="rwd-tag" id="streak-rwd-tag">0/5</span>
+      </div>
+      <div class="rwd" id="rwd-ref">
+        <span class="rwd-icon">👥</span>
+        <div class="rwd-info"><h4>Referral Reward</h4><p id="ref-sub">Refer karo — earn karo</p></div>
+        <span class="rwd-tag" id="ref-tag">0 pts</span>
+      </div>
+      <div class="rwd used"><span class="rwd-icon">🎁</span><div class="rwd-info"><h4>Welcome Discount</h4><p>10% off — used</p></div><span class="rwd-tag">Used ✓</span></div>
+    </div>
+    <!-- Dynamic referral section -->
+    <div class="sec-head">👥 Referral — Earn Karo!</div>
+    <div class="ref-prog">
+      <div class="ref-earn-msg" id="ref-earn-msg">Doston ko refer karo!</div>
+      <div style="font-size:.73rem;color:var(--mid);margin-bottom:.7rem;" id="ref-rates-msg">1st = 50pts | 2nd = 70pts | 3rd = 100pts</div>
+      <div class="ref-dots" id="ref-dots-wrap"></div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <p class="prog-text" id="prog-text">Share karo — earn karo!</p>
+    </div>
+    <!-- Milestone reward notice -->
+    <div id="milestone-notice" style="display:none;margin-bottom:.9rem;background:linear-gradient(135deg,rgba(255,214,0,.15),rgba(255,214,0,.05));border:1.5px solid rgba(255,214,0,.4);border-radius:16px;padding:1rem;text-align:center;">
+      <div style="font-size:1.8rem;margin-bottom:.3rem;" id="milestone-emoji">🎁</div>
+      <div style="font-size:.88rem;font-weight:700;color:var(--brown);" id="milestone-title">Visit Reward!</div>
+      <div style="font-size:.75rem;color:var(--mid);margin-top:.3rem;" id="milestone-desc">Counter pe claim karein</div>
+    </div>
+    <div class="sec-head">📋 Visit History</div>
+    <div class="visits-card" id="visit-history">
+      <div class="vi"><div class="vdot"></div><p>Registration — Welcome bonus pts</p><span>Today</span></div>
+    </div>
+    <button class="share-btn-red" style="margin-top:1.2rem;" onclick="shareRef()">📤 Refer Friends & Earn Rewards</button>
+    <!-- Help WhatsApp -->
+    <div id="help-wa-section" style="display:none;margin-top:.9rem;background:linear-gradient(135deg,rgba(46,125,50,.15),rgba(46,125,50,.05));border:1.5px solid rgba(46,125,50,.25);border-radius:16px;padding:1rem;text-align:center;">
+      <div style="font-size:.78rem;color:var(--brown);font-weight:600;margin-bottom:.4rem;" id="help-msg-text">Koi bhi problem? Hum help karenge!</div>
+      <button onclick="contactHelpWa()" style="background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;padding:.65rem 1.5rem;border-radius:50px;font-family:DM Sans,sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(37,211,102,.35);">💬 WhatsApp pe Help Lein</button>
+      <div style="font-size:.62rem;color:var(--mid);margin-top:.4rem;">Points, orders, kuch bhi — turant reply milega</div>
+    </div>
+    <!-- Help 4 buttons -->
+    <div style="background:white;border-radius:16px;padding:1rem;margin-top:.9rem;box-shadow:0 2px 10px rgba(0,0,0,.05);">
+      <div style="font-size:.73rem;font-weight:700;color:var(--brown);text-transform:uppercase;letter-spacing:1px;margin-bottom:.7rem;">💬 Koi Problem? Help Chahiye?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.7rem;">
+        <button onclick="openHelp('complaint')" style="background:rgba(211,47,47,.08);border:1px solid rgba(211,47,47,.2);color:var(--red);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">🚫 Complaint</button>
+        <button onclick="openHelp('query')" style="background:rgba(255,214,0,.1);border:1px solid rgba(255,214,0,.3);color:var(--brown);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">❓ Query</button>
+        <button onclick="openHelp('suggestion')" style="background:rgba(46,125,50,.08);border:1px solid rgba(46,125,50,.2);color:var(--green);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">💡 Suggestion</button>
+        <button onclick="openHelp('compliment')" style="background:rgba(255,214,0,.1);border:1px solid rgba(255,214,0,.3);color:var(--mid);padding:.6rem .4rem;border-radius:10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">❤️ Compliment</button>
+      </div>
+      <p style="font-size:.68rem;color:#AAA;text-align:center;">Owner directly respond karega WhatsApp pe</p>
+    </div>
+    <div style="text-align:center;margin-top:.9rem;"><button style="background:none;border:none;color:#BBB;font-size:.78rem;cursor:pointer;font-family:DM Sans,sans-serif;" onclick="logoutCustomer()">🚪 Logout</button></div>
+  </div>
+</div>
+
+<!-- HELP MODAL -->
+<div class="help-modal hidden" id="help-modal">
+  <div class="hm-box">
+    <div class="hm-title" id="hm-title">💬 Apni baat batao</div>
+    <textarea class="hm-textarea" id="hm-msg" rows="4" placeholder="Yahan likhein..."></textarea>
+    <div class="hm-btns">
+      <button class="hm-cancel" onclick="closeHelp()">Wapas</button>
+      <button class="hm-submit" onclick="submitHelp()">📤 Bhejo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MILESTONE POPUP -->
+<div class="ms-popup hidden" id="ms-popup">
+  <div class="ms-box">
+    <button class="ms-close" onclick="document.getElementById('ms-popup').classList.add('hidden')">✕</button>
+    <span class="ms-emoji" id="ms-emoji">🎁</span>
+    <div style="font-family:'Oswald',sans-serif;font-size:1.6rem;color:var(--red);margin-bottom:.4rem;" id="ms-title">Congrats!</div>
+    <p style="font-size:.85rem;color:var(--mid);line-height:1.6;" id="ms-desc">Counter pe claim karein!</p>
+    <button onclick="document.getElementById('ms-popup').classList.add('hidden')" style="background:var(--red);color:white;border:none;border-radius:12px;padding:.75rem 2rem;font-family:DM Sans,sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:1rem;">🙏 Jaroor Aaunga!</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div style="text-align:center;padding:.5rem;font-size:.6rem;color:#BBB;background:var(--cream);">Powered by <strong style="color:var(--mid);">VishTech Software Services</strong></div>
+
+<script>
+let cust=null,sgDone=0,sgPts=0,sgDoneMap={},starRating=0,pendingReg=null;
+let shopSettings={
+  rupeePerPoint:10,welcomePoints:50,redeemValue:10,
+  milestones:[{visit:5,reward:'Free Roll ya Momos',active:true}],
+  bdayReward:{text:'FREE Roll ya Momos + 15% off!',disc:15,pts:50},
+  refRewards:{r1:50,r2:70,r3:100,item3:'',maxRefs:3},
+  helpActive:1,helpWa:'8619721224',helpMsg:'Koi bhi problem? Hum help karenge!'
+};
+let allFavItems=['Paneer Roll','Aloo Roll','Chaap Roll','Steam Momos','Fried Momos','Gravy Momos','Cold Coffee','Chocolate Shake','Noodles','Paneer Tikka Roll','Kurkure Momos','Tandoori Momos','Mango Shake','Fried Rice','Hakka Noodles'];
+let selectedFavs=[];
+
+// ===== FAV SEARCH =====
+function filterFavDrop(){
+  const q=(document.getElementById('fav-search').value||'').trim().toLowerCase();
+  const dd=document.getElementById('fav-dropdown');
+  if(!q){dd.style.display='none';return;}
+  const filtered=allFavItems.filter(i=>i.toLowerCase().includes(q)&&!selectedFavs.includes(i));
+  let html=filtered.map(i=>`<div class="fav-opt" onclick="selectFav('${i.replace(/'/g,"\\'")}')">🌯 ${i}</div>`).join('');
+  const rawQ=document.getElementById('fav-search').value.trim();
+  if(!allFavItems.find(x=>x.toLowerCase()===q))html+=`<div class="fav-opt" style="color:var(--mid);" onclick="addCustomFav('${rawQ.replace(/'/g,"\\'")}')">➕ "${rawQ}" add karo</div>`;
+  if(!html){dd.style.display='none';return;}
+  dd.innerHTML=html;dd.style.display='block';
+}
+function selectFav(item){
+  if(!selectedFavs.includes(item))selectedFavs.push(item);
+  syncCheckboxes();renderFavTags();
+  document.getElementById('fav-search').value='';
+  document.getElementById('fav-dropdown').style.display='none';
+}
+function addCustomFav(item){
+  if(!item)return;
+  if(!allFavItems.includes(item))allFavItems.push(item);
+  selectFav(item);
+}
+function removeFav(item){
+  selectedFavs=selectedFavs.filter(x=>x!==item);
+  syncCheckboxes();renderFavTags();
+}
+function syncCheckboxes(){
+  document.querySelectorAll('#dish-grid input[type=checkbox]').forEach(cb=>{cb.checked=selectedFavs.includes(cb.value);});
+}
+function syncFavChk(cb){
+  if(cb.checked){if(!selectedFavs.includes(cb.value))selectedFavs.push(cb.value);}
+  else{selectedFavs=selectedFavs.filter(x=>x!==cb.value);}
+  renderFavTags();
+}
+function renderFavTags(){
+  const el=document.getElementById('reg-fav-tags');
+  if(el)el.innerHTML=selectedFavs.map(i=>`<span class="fav-tag">${i}<span class="fav-tag-x" onclick="removeFav('${i.replace(/'/g,"\\'")}')">×</span></span>`).join('');
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.fav-search-wrap')){const dd=document.getElementById('fav-dropdown');if(dd)dd.style.display='none';}});
+
+// ===== INIT =====
+window.onload=async()=>{
+  document.getElementById('r-dob').max=new Date().toISOString().split('T')[0];
+  try{
+    const s=await shopDb.shopConfig().get();
+    if(s.exists){
+      const d=s.data();
+      shopSettings={...shopSettings,...d};
+      if(d.milestones)shopSettings.milestones=d.milestones;
+      if(d.bdayReward)shopSettings.bdayReward=d.bdayReward;
+      if(d.refRewards)shopSettings.refRewards=d.refRewards;
+    }
+    const m=await shopDb.menu().get();
+    if(m.exists)(m.data().items||[]).forEach(i=>{if(i.name&&!allFavItems.includes(i.name))allFavItems.push(i.name);});
+  }catch(e){}
+  const saved=localStorage.getItem('rkh_cust');
+  if(saved){
+    cust=JSON.parse(saved);
+    try{const s=await shopDb.customer(cust.id).get();if(s.exists){cust={id:s.id,...s.data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));}}catch(e){}
+    loadDash();goTo('s-dashboard');return;
+  }
+  const ref=new URLSearchParams(location.search).get('ref');
+  if(ref){
+    try{const rs=await shopDb.customer(ref).get();if(rs.exists){const n=document.getElementById('ref-notice');n.style.display='block';n.textContent=`👥 ${rs.data().name} ne refer kiya! ${shopSettings.welcomePoints||50} bonus points milenge!`;}}catch(e){}
+  }
+};
+
+async function loadExistingMember(){
+  const phone=prompt('Apna registered mobile number enter karein:');
+  if(!phone||phone.length!==10)return toast('⚠️ 10-digit number chahiye');
+  try{
+    const s=await shopDb.customers().where('phone','==',phone.trim()).get();
+    if(!s.empty){cust={id:s.docs[0].id,...s.docs[0].data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));loadDash();goTo('s-dashboard');}
+    else toast('❌ Number registered nahi. Pehle register karein!');
+  }catch(e){toast('Error: '+e.message);}
+}
+
+function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function setStar(n){starRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<n));}
+
+async function submitReg(){
+  const name=document.getElementById('r-name').value.trim();
+  const phone=document.getElementById('r-phone').value.trim();
+  const dob=document.getElementById('r-dob').value;
+  if(!name)return toast('⚠️ Naam zaroor likhein');
+  if(!phone||phone.length!==10||!/^\d{10}$/.test(phone))return toast('⚠️ Sahi 10-digit mobile');
+  if(!dob)return toast('⚠️ Date of birth bharen');
+  const btn=document.getElementById('sub-btn');btn.disabled=true;btn.textContent='⏳ Check ho raha hai...';
+  try{
+    const ex=await shopDb.customers().where('phone','==',phone).get();
+    if(!ex.empty){cust={id:ex.docs[0].id,...ex.docs[0].data()};localStorage.setItem('rkh_cust',JSON.stringify(cust));toast('✅ Pehle se registered!');loadDash();setTimeout(()=>goTo('s-dashboard'),1200);btn.disabled=false;btn.textContent='🎁 Register & Get Discount';return;}
+    const ref=new URLSearchParams(location.search).get('ref');
+    if(ref){const rd=await shopDb.customer(ref).get();if(rd.exists&&rd.data().phone===phone){toast('❌ Apne aap ko refer nahi kar sakte!');btn.disabled=false;btn.textContent='🎁 Register & Get Discount';return;}}
+    const checkboxFavs=[...document.querySelectorAll('#dish-grid input[type=checkbox]:checked')].map(x=>x.value);
+    const allSel=[...new Set([...selectedFavs,...checkboxFavs])];
+    pendingReg={name,phone,dob,ref,anni:document.getElementById('r-anni').value||null,city:document.getElementById('r-city').value.trim()||null,dishes:allSel,occs:[...document.querySelectorAll('input[id^=o]:checked')].map(x=>x.value),feedback:document.getElementById('r-feedback').value||null,rating:starRating||null};
+    btn.textContent='⏳ Register ho raha hai...';
+    await completeRegistration();
+  }catch(e){toast('❌ '+e.message);}
+  btn.disabled=false;btn.textContent='🎁 Register & Get Discount';
+}
+
+async function completeRegistration(){
+  if(!pendingReg)return;
+  const {name,phone,dob,anni,city,dishes,occs,feedback,rating,ref}=pendingReg;
+  const id='RKH'+Date.now().toString().slice(-6)+Math.floor(Math.random()*10);
+  const welPts=(shopSettings.welcomePoints||50)+(ref?50:0);
+  const data={id,name,phone,birthday:dob,anniversary:anni,city,dishes,occasions:occs,feedback,rating,points:welPts,visits:0,referralCount:0,referralBonus:0,referredBy:ref||null,tier:'Silver',phoneVerified:false,joinDate:firebase.firestore.FieldValue.serverTimestamp(),joinDateStr:new Date().toLocaleDateString('en-IN'),lastVisit:firebase.firestore.FieldValue.serverTimestamp(),lastVisitDays:0,totalSpend:0,active:true,shop:'rollhub'};
+  await shopDb.customer(id).set(data);
+  if(ref){
+    try{
+      const rd=await shopDb.customer(ref).get();
+      if(rd.exists){
+        const rr=shopSettings.refRewards||{};const maxR=rr.maxRefs||3;const curR=rd.data().referralCount||0;
+        if(curR<maxR){const cnt=curR+1;const bonus=cnt===1?(rr.r1||50):cnt===2?(rr.r2||70):(rr.r3||100);
+          await shopDb.customer(ref).update({points:firebase.firestore.FieldValue.increment(bonus),referralCount:firebase.firestore.FieldValue.increment(1),referralBonus:firebase.firestore.FieldValue.increment(bonus)});
+          const existRef=await shopDb.referrals().where('newCust','==',id).get();
+          if(existRef.empty)await shopDb.referrals().add({referrer:ref,newCust:id,newCustName:name,newCustPhone:phone,date:firebase.firestore.FieldValue.serverTimestamp(),bonus,status:'pending'});
+        }
+      }
+    }catch(e){}
+  }
+  cust={...data,id};localStorage.setItem('rkh_cust',JSON.stringify(cust));
+  // Update offer screen dynamically
+  const bday=shopSettings.bdayReward||{};
+  if(bday.text)document.getElementById('offer-bday-text').textContent=bday.text;
+  const ms=(shopSettings.milestones||[]).filter(m=>m.active).sort((a,b)=>a.visit-b.visit)[0];
+  if(ms){document.getElementById('offer-ms-title').textContent=`${ms.visit}th Visit Pe Reward!`;document.getElementById('offer-ms-text').textContent=`"${ms.reward}" — sirf ${ms.visit} visits mein!`;}
+  const rr=shopSettings.refRewards||{};const maxR=rr.maxRefs||3;
+  let tiHtml='';for(let i=1;i<=maxR;i++){const pts=i===1?(rr.r1||50):i===2?(rr.r2||70):(rr.r3||100);tiHtml+=`<div class="rt ${i===maxR?'hl':''}"><span class="rt-num">${i}</span><div class="rt-label">${pts} pts</div></div>`;}
+  document.getElementById('offer-ref-tiers').innerHTML=tiHtml;
+  document.getElementById('disc-code').textContent='ROLL'+phone.slice(-4);
+  document.getElementById('offer-name').textContent=name.split(' ')[0]+' Ji! 🌯';
+  pendingReg=null;goTo('s-social');
+}
+
+function doTask(id,pts,url){
+  if(sgDoneMap[id]){toast('✅ Already done!');return;}
+  window.open(url,'_blank');
+  sgDoneMap[id]=true;document.getElementById('t-'+id).classList.add('done');document.getElementById('tc-'+id).textContent='✓';
+  sgDone++;sgPts+=pts;
+  document.getElementById('sg-done-lbl').textContent=sgDone+' of 4';
+  document.getElementById('sg-pts-lbl').textContent='+'+sgPts+' pts (pending)';
+  document.getElementById('sg-fill').style.width=(sgPts/95*100)+'%';
+  localStorage.setItem('rkh_sg_'+(cust?.id||''),JSON.stringify(sgDoneMap));
+  if(cust)shopDb.socialTasks().add({custId:cust.id,taskId:id,points:pts,status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  toast('✅ Done! Admin verify karega — points credit honge.');
+}
+
+async function loadMenuItems(){
+  try{
+    const s=await shopDb.menu().get();if(!s.exists)return;
+    const pts=cust?.points||0;
+    const items=(s.data().items||[]).filter(i=>i.discountActive);
+    if(!items.length)return;
+    const rows=items.map(item=>{
+      let disc=item.discountPct||0;
+      if(pts>=700&&item.discountVip)disc=item.discountVip;
+      else if(pts>=300&&item.discountGold)disc=item.discountGold;
+      if(!disc)return '';
+      return`<div class="mi-row"><span style="font-size:1.2rem">${item.emoji||'🌯'}</span><div style="flex:1"><div style="font-size:.85rem;font-weight:500;color:var(--brown)">${item.name}</div><div style="font-size:.7rem;color:var(--mid)">₹${item.price}</div></div><span class="mi-badge-sm">${disc}% OFF</span></div>`;
+    }).filter(Boolean).join('');
+    if(rows){document.getElementById('menu-dash').style.display='block';document.getElementById('menu-dash-items').innerHTML=rows;}
+  }catch(e){}
+}
+
+function loadDash(){
+  if(!cust)return;
+  const name=cust.name||'Customer';
+  document.getElementById('dash-name').childNodes[0].textContent=name+' ';
+  const pts=cust.points||0,visits=cust.visits||0;
+  document.getElementById('dash-pts').textContent=pts;
+  document.getElementById('pts-big').textContent=pts;
+  document.getElementById('d-visits').textContent=visits;
+  document.getElementById('d-saved').textContent='₹'+Math.floor((cust.totalSpend||0)*0.1);
+  document.getElementById('d-refs').textContent=cust.referralCount||0;
+  const vw=document.getElementById('verified-badge-wrap');
+  if(vw)vw.innerHTML=cust.phoneVerified?'<span style="color:#66bb6a;font-size:.68rem;">✅ Verified</span>':'<span style="color:rgba(255,214,0,.6);font-size:.68rem;">📱 '+cust.phone+'</span>';
+  // Tier
+  let tier='🥈 Silver',fill=Math.min((pts/300)*100,100),from='Silver',to='Gold (300)',next=`🥇 Gold ke liye ${300-pts} aur points!`;
+  if(pts>=700){tier='💎 VIP';fill=100;from='Gold';to='VIP (700)';next='🎉 VIP Diamond! Exclusive benefits!';}
+  else if(pts>=300){fill=Math.min(((pts-300)/400)*100,100);tier='🥇 Gold';from='Gold (300)';to='VIP (700)';next=`💎 VIP ke liye ${700-pts} aur points!`;}
+  document.getElementById('dash-tier').textContent=tier;document.getElementById('tier-badge').textContent=tier;
+  document.getElementById('pts-fill').style.width=fill+'%';document.getElementById('tier-from').textContent=from;
+  document.getElementById('tier-to').textContent=to;document.getElementById('tier-next').textContent=next;
+  // XP gamification
+  const ms=(shopSettings.milestones||[]).filter(m=>m.active).sort((a,b)=>a.visit-b.visit);
+  const nextMs=ms.find(m=>m.visit>visits);const prevMs=[...ms].reverse().find(m=>m.visit<=visits);
+  const prevV=prevMs?prevMs.visit:0;const nextV=nextMs?nextMs.visit:prevV+5;
+  const xpPct=nextV>prevV?Math.min(((visits-prevV)/(nextV-prevV))*100,100):100;
+  const xpBar=document.getElementById('xp-bar');if(xpBar)xpBar.style.width=xpPct+'%';
+  const xpFrom=document.getElementById('xp-from');if(xpFrom)xpFrom.textContent=`${visits} Visits — Level ${Math.floor(visits/5)+1}`;
+  const xpNext=document.getElementById('xp-next-label');
+  if(xpNext)xpNext.textContent=nextMs?`🎁 ${nextMs.visit-visits} aur: ${nextMs.reward}`:'🏆 Champion!';
+  // Streak from admin
+  loadStreakDynamic(visits,ms);
+  // Birthday
+  if(cust.birthday){
+    const today=new Date(),b=new Date(cust.birthday),nb=new Date(today.getFullYear(),b.getMonth(),b.getDate());
+    if(nb<today)nb.setFullYear(today.getFullYear()+1);
+    const dl=Math.ceil((nb-today)/(1000*60*60*24));
+    const bc=document.getElementById('bday-countdown');
+    if(bc&&dl<=30&&dl>0){
+      bc.style.display='flex';
+      document.getElementById('bday-title').textContent=dl===1?'Kal birthday hai! 🎂':`${dl} din mein birthday! 🎂`;
+      const bd=shopSettings.bdayReward||{};
+      document.getElementById('bday-sub').textContent=bd.text||'Special reward aapka wait!';
+    }
+  }
+  // Birthday reward text in list
+  const bd=shopSettings.bdayReward||{};
+  const bdSub=document.getElementById('bday-rwd-sub');if(bdSub&&bd.text)bdSub.textContent=bd.text;
+  // Anniversary
+  if(cust.anniversary){
+    const today=new Date(),a=new Date(cust.anniversary),na=new Date(today.getFullYear(),a.getMonth(),a.getDate());
+    if(na<today)na.setFullYear(today.getFullYear()+1);
+    const dl=Math.ceil((na-today)/(1000*60*60*24));
+    const ab=document.getElementById('anni-banner');
+    if(ab&&dl<=14&&dl>=0){
+      ab.style.display='flex';
+      document.getElementById('anni-title').textContent=dl===0?'Aaj anniversary hai! 💑':dl===1?'Kal anniversary hai! 💑':`${dl} din mein anniversary! 💑`;
+      document.getElementById('anni-sub').textContent='Special anniversary combo aapka wait!';
+    }
+  }
+  // Decay
+  const lv=cust.lastVisitDays||0;
+  if(lv>=12){
+    const da=document.getElementById('decay-alert');if(da)da.style.display='flex';
+    document.getElementById('decay-msg').textContent=lv>=20?`🚨 ${lv} din ho gaye! Jaldi aao — points active rakhein!`:`⚠️ ${lv} din ho gaye — aate raho!`;
+  }
+  // Personal offer for inactive users
+  if(lv>=15&&cust.personalOffer){
+    const code='BACK'+(cust.phone||'').slice(-4);
+    const wrap=document.getElementById('personal-offer-wrap');
+    if(wrap){
+      const msg=cust.personalOffer?cust.personalOffer.msg:`Hum aapko miss kar rahe hain, ${name.split(' ')[0]} ji!`;
+      wrap.innerHTML=`<div class="special-offer-banner" style="margin-bottom:.9rem;"><div style="font-family:'Oswald',sans-serif;font-size:1rem;color:var(--yellow);margin-bottom:.25rem;">🎁 Sirf Aapke Liye!</div><div style="font-size:.75rem;color:rgba(255,255,255,.7);line-height:1.5;margin-bottom:.6rem;">${msg}</div><div style="background:rgba(255,214,0,.12);border:1.5px dashed var(--yellow2);border-radius:8px;padding:.45rem .8rem;display:inline-flex;align-items:center;gap:.7rem;"><span style="font-family:'Oswald',sans-serif;font-size:1.1rem;color:var(--yellow);letter-spacing:2px;">${code}</span><button onclick="navigator.clipboard.writeText('${code}').then(()=>toast('✅ Copied!'))" style="background:var(--yellow2);border:none;border-radius:6px;padding:.22rem .6rem;font-size:.7rem;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--brown);font-weight:600;">Copy</button></div></div>`;
+    }
+  }
+  // Favs
+  if(cust.dishes&&cust.dishes.length){document.getElementById('fav-section').style.display='block';document.getElementById('fav-chips').innerHTML=cust.dishes.map(d=>`<span class="fav-chip">${d}</span>`).join('');}
+  // Menu
+  loadMenuItems();
+  // Referral dynamic
+  loadRefDynamic();
+  // Milestone notice + popup
+  checkMilestoneNotice(visits);
+  // Help
+  if(shopSettings.helpActive){const hw=document.getElementById('help-wa-section');if(hw)hw.style.display='block';const hm=document.getElementById('help-msg-text');if(hm&&shopSettings.helpMsg)hm.textContent=shopSettings.helpMsg;}
+  // Social tasks
+  const sgSaved=localStorage.getItem('rkh_sg_'+cust.id);
+  if(sgSaved){const m=JSON.parse(sgSaved);Object.keys(m).forEach(k=>{if(m[k]){sgDoneMap[k]=true;const el=document.getElementById('t-'+k);if(el)el.classList.add('done');const tc=document.getElementById('tc-'+k);if(tc)tc.textContent='✓';}});}
+  // Visit history
+  loadVisitHistory();
+}
+
+function loadStreakDynamic(visits,milestones){
+  const nextMs=milestones.find(m=>m.visit>visits);
+  const prevMs=[...milestones].reverse().find(m=>m.visit<=visits);
+  const subEl=document.getElementById('streak-sub');
+  const dotsEl=document.getElementById('streak-dots');
+  const nextHint=document.getElementById('streak-next-hint');
+  const rwdTitle=document.getElementById('streak-rwd-title');
+  const rwdText=document.getElementById('streak-rwd-text');
+  const rwdTag=document.getElementById('streak-rwd-tag');
+  document.getElementById('streak-num').textContent=visits;
+  if(nextMs){
+    const target=nextMs.visit;const prev=(prevMs?prevMs.visit:0);
+    if(subEl)subEl.textContent=visits===target-1?`🔥 Next visit pe "${nextMs.reward}"!`:`${target-visits} aur visit mein: "${nextMs.reward}"`;
+    if(nextHint)nextHint.textContent=`Progress: ${visits}/${target} visits`;
+    const dotsCount=Math.min(target-prev,8);
+    if(dotsEl)dotsEl.innerHTML=Array.from({length:dotsCount},(_,i)=>{const vNum=prev+i+1;const isFilled=visits>=vNum;const isTgt=vNum===target;return`<div class="sdot ${isFilled?'filled':''} ${isTgt?'target':''}">${isTgt?'🎁':isFilled?'✓':vNum}</div>`;}).join('');
+    if(rwdTitle)rwdTitle.textContent=`${target}th Visit Reward`;
+    if(rwdText)rwdText.textContent=visits>=target?'Counter pe claim karo!':nextMs.reward;
+    if(rwdTag)rwdTag.textContent=`${visits}/${target}`;
+    document.getElementById('rwd-streak').classList.toggle('locked',visits<target);
+  }else{
+    if(subEl)subEl.textContent='🏆 Saare milestones complete! Champion!';
+    if(dotsEl)dotsEl.innerHTML='<span style="font-size:1.5rem">🏆</span>';
+    if(nextHint)nextHint.textContent='';
+    document.getElementById('rwd-streak').classList.remove('locked');
+    if(rwdTitle)rwdTitle.textContent='Champion!';
+    if(rwdText)rwdText.textContent='Sab rewards claim kar chuke hain! 🏆';
+    if(rwdTag)rwdTag.textContent='🏆';
+  }
+}
+
+function loadRefDynamic(){
+  const refs=cust.referralCount||0;
+  const rr=shopSettings.refRewards||{};const maxR=rr.maxRefs||3;
+  const wrap=document.getElementById('ref-dots-wrap');
+  if(wrap)wrap.innerHTML=Array.from({length:maxR},(_,i)=>`<div class="rdot ${i<refs?'filled':''}">${i<refs?'✓':i+1}</div>`).join('');
+  document.getElementById('prog-fill').style.width=Math.min((refs/maxR)*100,100)+'%';
+  let earned=0;if(refs>=1)earned+=rr.r1||50;if(refs>=2)earned+=rr.r2||70;if(refs>=3)earned+=rr.r3||100;
+  document.getElementById('ref-tag').textContent=refs>0?`${earned} pts`:'0 pts';
+  const rRates=document.getElementById('ref-rates-msg');
+  if(rRates)rRates.textContent=`1st = ${rr.r1||50}pts | 2nd = ${rr.r2||70}pts | ${maxR}th = ${rr.r3||100}pts${rr.item3?` + ${rr.item3}`:''}`;
+  document.getElementById('ref-earn-msg').textContent=refs>=maxR?'🎉 Sab referrals done!':'Doston ko refer karo — points pao!';
+  document.getElementById('prog-text').textContent=refs>=maxR?'🎉 Sab complete! Claim karo.':refs>0?`${maxR-refs} aur dost chahiye`:'Share karo — earn karo!';
+  document.getElementById('ref-sub').textContent=refs>=maxR?'Complete!':refs>0?`${maxR-refs} aur`:`${maxR} dost`;
+}
+
+function checkMilestoneNotice(visits){
+  if(!shopSettings.milestones||!visits)return;
+  const match=shopSettings.milestones.find(m=>m.active&&parseInt(m.visit)===visits);
+  if(!match)return;
+  const notice=document.getElementById('milestone-notice');
+  if(notice){
+    notice.style.display='block';
+    document.getElementById('milestone-emoji').textContent='🎁';
+    document.getElementById('milestone-title').textContent=`${visits}th Visit — Reward Milega!`;
+    document.getElementById('milestone-desc').textContent=`"${match.reward}" — Counter pe claim karein!`;
+  }
+  const popKey=`rkh_ms_${cust.id}_${visits}`;
+  if(!localStorage.getItem(popKey)){
+    localStorage.setItem(popKey,'1');
+    setTimeout(()=>{
+      document.getElementById('ms-emoji').textContent='🎁';
+      document.getElementById('ms-title').textContent=`🔥 ${visits}th Visit!`;
+      document.getElementById('ms-desc').textContent=`Aapka reward: "${match.reward}"\n\nCounter pe owner ko batao!`;
+      document.getElementById('ms-popup').classList.remove('hidden');
+    },1200);
+  }
+}
+
+async function loadVisitHistory(){
+  try{
+    const txns=await shopDb.transactions().where('customerId','==',cust.id).limit(10).get();
+    const vh=document.getElementById('visit-history');
+    if(!txns.empty){
+      const sorted=txns.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{try{return(b.date?.toMillis()||0)-(a.date?.toMillis()||0);}catch{return 0;}}).slice(0,5);
+      vh.innerHTML=sorted.map(tx=>{
+        let dateStr='';
+        if(tx.date&&tx.date.toDate){const dt=tx.date.toDate();const today=new Date();const diff=Math.floor((today-dt)/(1000*60*60*24));dateStr=diff===0?'Aaj':diff===1?'Kal':diff+'d ago';}
+        const icon=tx.type==='earn'?'🟢':tx.type==='redeem'?'🔴':'⭐';
+        return`<div class="vi"><div class="vdot" style="background:${tx.type==='earn'?'var(--green)':tx.type==='redeem'?'var(--red)':'var(--yellow2)'}"></div><p>${icon} ${tx.note||tx.type} — ${tx.points>0?'+':''}${tx.points} pts</p><span>${dateStr}</span></div>`;
+      }).join('');
+    }else{
+      vh.innerHTML=`<div class="vi"><div class="vdot"></div><p>Registration — Welcome ${shopSettings.welcomePoints||50} pts</p><span>Today</span></div>`;
+    }
+  }catch(e){}
+}
+
+function shareRef(){
+  if(!cust){toast('⚠️ Pehle register karein!');return;}
+  const link=`${location.origin}${location.pathname}?ref=${cust.id}`;
+  const rr=shopSettings.refRewards||{};
+  const msg=`🌯 *The Kathi Roll Hub — Murlipura, Jaipur*\n\n⭐ Zomato Top 10 in Rolls!\n\nMere saath join karo:\n✅ Welcome Discount\n🎂 Birthday Special Reward\n🔥 Visit Milestone Rewards\n💎 Refer Rewards: ${rr.r1||50} → ${rr.r2||70} → ${rr.r3||100} pts\n\nMera referral link:\n👉 ${link}\n\n🌯 Kathi Roll | Momos | Chinese | Shakes`;
+  if(navigator.share)navigator.share({title:'The Kathi Roll Hub',text:msg});
+  else navigator.clipboard.writeText(msg).then(()=>toast('📤 Copied!'));
+}
+
+function copyCode(){const code=document.getElementById('disc-code').textContent;navigator.clipboard.writeText(code).then(()=>toast('✅ Code: '+code)).catch(()=>toast('Code: '+code));}
+function logoutCustomer(){localStorage.removeItem('rkh_cust');cust=null;sgDone=0;sgPts=0;sgDoneMap={};selectedFavs=[];goTo('s-welcome');toast('👋 Logout!');}
+function contactHelpWa(){
+  if(!cust)return;
+  const wa=shopSettings.helpWa||'8619721224';
+  const msg=encodeURIComponent(`Namaste! Main ${cust.name} hoon.\nMember ID: ${cust.id}\nPhone: ${cust.phone}\n\nMujhe help chahiye:\n`);
+  window.open(`https://wa.me/91${wa}?text=${msg}`,'_blank');
+}
+
+// ===== HELP SYSTEM — FIXED =====
+let helpCategory='query';
+function openHelp(cat){
+  if(!cust)return toast('⚠️ Pehle register karein!');
+  helpCategory=cat;
+  const cats={complaint:'🚫 Complaint Karein',query:'❓ Query Poochein',suggestion:'💡 Suggestion Dein',compliment:'❤️ Compliment Karein'};
+  const modal=document.getElementById('help-modal');
+  const titleEl=document.getElementById('hm-title');
+  const msgEl=document.getElementById('hm-msg');
+  if(titleEl)titleEl.textContent=cats[cat]||'💬 Help';
+  if(msgEl){msgEl.value='';}
+  if(modal)modal.classList.remove('hidden');
+  setTimeout(()=>{if(msgEl)msgEl.focus();},300);
+}
+function closeHelp(){const modal=document.getElementById('help-modal');if(modal)modal.classList.add('hidden');}
+async function submitHelp(){
+  const msgEl=document.getElementById('hm-msg');
+  const msg=msgEl?msgEl.value.trim():'';
+  if(!msg||msg.length<5)return toast('⚠️ Kuch likhein (5+ words)');
+  try{
+    await shopDb.helpTickets().add({custId:cust.id,custName:cust.name,custPhone:cust.phone,category:helpCategory,message:msg,status:'open',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    closeHelp();
+    toast('✅ Bhej diya! Owner jald respond karega.');
+    const wa=shopSettings.helpWa||'8619721224';
+    setTimeout(()=>{
+      const waMsg=encodeURIComponent(`Namaste! Main ${cust.name} (ID: ${cust.id})\n${helpCategory.toUpperCase()}: ${msg}`);
+      window.open(`https://wa.me/91${wa}?text=${waMsg}`,'_blank');
+    },800);
+  }catch(e){toast('❌ '+e.message);}
+}
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+</script>
+</body>
+</html>
+
