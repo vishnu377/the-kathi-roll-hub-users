@@ -1,7 +1,4 @@
-
-
-
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
@@ -10,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 try{
 firebase.initializeApp({
@@ -22,10 +18,9 @@ firebase.initializeApp({
   appId:"1:684649816270:web:73dc4606b754702f6a309f"
 });
 }catch(e){console.warn('Firebase init error:',e);}
-let db,shopDb,auth;
+let db,shopDb;
 try{
   db=firebase.firestore();
-  auth=firebase.auth();
   shopDb={
     customers:()=>db.collection('rollhub_customers'),
     customer:(id)=>db.collection('rollhub_customers').doc(id),
@@ -249,13 +244,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
 .lm-step{display:none;}
 .lm-step.active{display:block;}
 .lm-err{font-size:.75rem;color:var(--red);margin-bottom:.6rem;display:none;}
-/* OTP login styles */
-.otp-boxes{display:flex;gap:.5rem;justify-content:center;margin-bottom:.9rem;}
-.otp-box{width:44px;height:52px;border:1.5px solid #E0CC80;border-radius:10px;text-align:center;font-size:1.4rem;font-weight:700;color:var(--brown);background:white;outline:none;font-family:'DM Sans',sans-serif;}
-.otp-box:focus{border-color:var(--yellow2);box-shadow:0 0 0 3px rgba(255,192,0,.15);}
-.otp-timer{font-size:.72rem;color:var(--mid);text-align:center;margin-bottom:.7rem;}
-.otp-resend{font-size:.75rem;color:var(--red);text-align:center;cursor:pointer;text-decoration:underline;margin-bottom:.7rem;display:none;}
-.lm-btn:disabled{opacity:.55;cursor:not-allowed;}
+/* OTP styles removed — using DOB login */
 .toast{position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);color:var(--yellow);padding:.7rem 1.3rem;border-radius:50px;font-size:.8rem;font-weight:600;z-index:9999;transition:transform .3s ease;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 </style>
@@ -531,39 +520,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
   </div>
 </div>
 
-<!-- LOGIN MODAL -->
-<!-- LOGIN MODAL — OTP via Firebase Auth -->
+<!-- LOGIN MODAL — Phone + DOB -->
 <div class="login-modal hidden" id="login-modal">
   <div class="lm-box">
     <div class="lm-title">👋 Welcome Back!</div>
-    <div class="lm-sub" id="lm-sub-text">OTP se secure login karein</div>
+    <div class="lm-sub">Apna dashboard access karein</div>
 
     <!-- Step 1: Phone number -->
     <div class="lm-step active" id="lm-step1">
-      <input class="lm-input" id="lm-phone" type="tel" placeholder="10-digit Mobile Number" maxlength="10" inputmode="numeric" onkeydown="if(event.key==='Enter')loginSendOtp()">
-      <div id="recaptcha-container" style="margin-bottom:.5rem;"></div>
+      <label style="font-size:.75rem;color:var(--mid);font-weight:500;margin-bottom:.3rem;display:block;">📱 Registered Mobile Number</label>
+      <input class="lm-input" id="lm-phone" type="tel" placeholder="10-digit number" maxlength="10" inputmode="numeric" onkeydown="if(event.key==='Enter')loginStep1()">
       <div class="lm-err" id="lm-err1"></div>
-      <button class="lm-btn" id="lm-send-btn" onclick="loginSendOtp()">📱 OTP Bhejo →</button>
+      <button class="lm-btn" onclick="loginStep1()">Aage Badhein →</button>
       <button class="lm-cancel" onclick="closeLoginModal()">Wapas</button>
     </div>
 
-    <!-- Step 2: OTP verify -->
+    <!-- Step 2: DOB verify -->
     <div class="lm-step" id="lm-step2">
-      <div style="font-size:.82rem;color:var(--brown);font-weight:600;margin-bottom:.4rem;">OTP enter karein</div>
-      <div style="font-size:.73rem;color:var(--mid);margin-bottom:.9rem;" id="lm-otp-hint">+91 XXXXXXXXXX pe bheja gaya</div>
-      <div class="otp-boxes">
-        <input class="otp-box" id="otp0" maxlength="1" inputmode="numeric" type="tel" oninput="otpMove(0,this)" onkeydown="otpKey(0,event)">
-        <input class="otp-box" id="otp1" maxlength="1" inputmode="numeric" type="tel" oninput="otpMove(1,this)" onkeydown="otpKey(1,event)">
-        <input class="otp-box" id="otp2" maxlength="1" inputmode="numeric" type="tel" oninput="otpMove(2,this)" onkeydown="otpKey(2,event)">
-        <input class="otp-box" id="otp3" maxlength="1" inputmode="numeric" type="tel" oninput="otpMove(3,this)" onkeydown="otpKey(3,event)">
-        <input class="otp-box" id="otp4" maxlength="1" inputmode="numeric" type="tel" oninput="otpMove(4,this)" onkeydown="otpKey(4,event)">
-        <input class="otp-box" id="otp5" maxlength="1" inputmode="numeric" type="tel" oninput="otpMove(5,this)" onkeydown="otpKey(5,event)">
-      </div>
-      <div class="otp-timer" id="otp-timer">⏳ 60 sec mein expire hoga</div>
-      <div class="otp-resend" id="otp-resend-btn" onclick="resendOtp()">🔄 OTP dobara bhejo</div>
+      <div style="font-size:.78rem;color:var(--mid);margin-bottom:.8rem;">🔒 Security ke liye Date of Birth dalein:</div>
+      <input class="lm-input" id="lm-dob" type="date" placeholder="Date of Birth">
       <div class="lm-err" id="lm-err2"></div>
-      <button class="lm-btn" id="lm-verify-btn" onclick="loginVerifyOtp()">✅ Verify &amp; Login</button>
-      <button class="lm-cancel" onclick="loginBackToPhone()">← Number change karein</button>
+      <button class="lm-btn" onclick="loginStep2()">✅ Login Karein</button>
+      <button class="lm-cancel" onclick="loginBack()">← Wapas</button>
     </div>
   </div>
 </div>
@@ -668,192 +646,88 @@ function renderFavTags(){
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.fav-search-wrap')){const dd=document.getElementById('fav-dropdown');if(dd)dd.style.display='none';}});
 
-// ===== OTP LOGIN SYSTEM — Firebase Phone Auth =====
-let otpConfirmResult=null, otpTimerInterval=null, recaptchaVerifier=null;
+// ===== LOGIN — Phone + DOB (Fast, no OTP cost) =====
 let loginPhoneTemp='', loginDataTemp=null;
 
 function openLoginModal(){
-  document.getElementById('lm-phone').value='';
+  loginPhoneTemp=''; loginDataTemp=null;
+  const p=document.getElementById('lm-phone');if(p)p.value='';
+  const d=document.getElementById('lm-dob');if(d)d.value='';
   document.getElementById('lm-err1').style.display='none';
   document.getElementById('lm-err2').style.display='none';
   document.getElementById('lm-step1').classList.add('active');
   document.getElementById('lm-step2').classList.remove('active');
   document.getElementById('login-modal').classList.remove('hidden');
-  // Clear OTP boxes
-  for(let i=0;i<6;i++){const b=document.getElementById('otp'+i);if(b)b.value='';}
-  // Init recaptcha
-  initRecaptcha();
-  setTimeout(()=>document.getElementById('lm-phone').focus(),350);
-}
-
-function initRecaptcha(){
-  try{
-    if(recaptchaVerifier){try{recaptchaVerifier.clear();}catch(e){}}
-    recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{
-      size:'invisible',
-      callback:()=>{},
-      'expired-callback':()=>{toast('⚠️ reCAPTCHA expire hua — dobara try karein');}
-    });
-  }catch(e){console.warn('reCAPTCHA init:',e);}
+  setTimeout(()=>document.getElementById('lm-phone').focus(),300);
 }
 
 function closeLoginModal(){
   document.getElementById('login-modal').classList.add('hidden');
-  if(otpTimerInterval)clearInterval(otpTimerInterval);
-  otpConfirmResult=null;
 }
 
-function loginBackToPhone(){
+function loginBack(){
   document.getElementById('lm-step1').classList.add('active');
   document.getElementById('lm-step2').classList.remove('active');
-  document.getElementById('lm-err1').style.display='none';
-  if(otpTimerInterval)clearInterval(otpTimerInterval);
-  otpConfirmResult=null;
-  initRecaptcha();
-  setTimeout(()=>document.getElementById('lm-phone').focus(),200);
 }
 
-async function loginSendOtp(){
-  const phone = document.getElementById('lm-phone').value.trim();
-  const err = document.getElementById('lm-err1');
-  const btn = document.getElementById('lm-send-btn');
+async function loginStep1(){
+  const phone=document.getElementById('lm-phone').value.trim();
+  const err=document.getElementById('lm-err1');
   err.style.display='none';
-
-  if(!phone || phone.length!==10 || !/^\d{10}$/.test(phone)){
-    err.textContent='⚠️ Sahi 10-digit mobile number dalein';
+  if(!phone||phone.length!==10||!/^\d{10}$/.test(phone)){
+    err.textContent='⚠️ Sahi 10-digit number dalein';
     err.style.display='block'; return;
   }
-
-  // Check if phone registered
   try{
-    const snap = await shopDb.customers().where('phone','==',phone).get();
-    if(snap.empty){
-      err.textContent='❌ Yeh number registered nahi hai. Pehle register karein!';
+    const s=await shopDb.customers().where('phone','==',phone).get();
+    if(s.empty){
+      err.textContent='❌ Number registered nahi. Pehle Join karein!';
       err.style.display='block'; return;
     }
-    loginPhoneTemp = phone;
-    loginDataTemp = {id:snap.docs[0].id,...snap.docs[0].data()};
-  }catch(e){
-    err.textContent='❌ Check error: '+e.message;
-    err.style.display='block'; return;
-  }
-
-  btn.disabled=true; btn.textContent='⏳ OTP bheja ja raha hai...';
-
-  try{
-    if(!recaptchaVerifier) initRecaptcha();
-    const fullPhone = '+91' + phone;
-    otpConfirmResult = await auth.signInWithPhoneNumber(fullPhone, recaptchaVerifier);
-
-    // Show OTP step
+    loginPhoneTemp=phone;
+    loginDataTemp={id:s.docs[0].id,...s.docs[0].data()};
     document.getElementById('lm-step1').classList.remove('active');
     document.getElementById('lm-step2').classList.add('active');
-    document.getElementById('lm-otp-hint').textContent = '+91 '+phone.slice(0,5)+'XXXXX pe OTP bheja gaya';
-    startOtpTimer();
-    setTimeout(()=>document.getElementById('otp0').focus(),300);
-    toast('✅ OTP bheja gaya!');
+    setTimeout(()=>document.getElementById('lm-dob').focus(),200);
   }catch(e){
-    let msg = e.message;
-    if(e.code==='auth/too-many-requests') msg='⚠️ Bahut zyada requests — thodi der baad try karein';
-    else if(e.code==='auth/invalid-phone-number') msg='❌ Phone number invalid hai';
-    else if(e.code==='auth/quota-exceeded') msg='⚠️ Daily limit cross ho gayi — kal try karein';
-    err.textContent=msg; err.style.display='block';
-    // Reset recaptcha on error
-    try{recaptchaVerifier.clear();}catch(ex){}
-    recaptchaVerifier=null; initRecaptcha();
-  }finally{
-    btn.disabled=false; btn.textContent='📱 OTP Bhejo →';
+    err.textContent='❌ Error: '+e.message;
+    err.style.display='block';
   }
 }
 
-function startOtpTimer(){
-  let sec=60;
-  const timerEl=document.getElementById('otp-timer');
-  const resendEl=document.getElementById('otp-resend-btn');
-  resendEl.style.display='none';
-  if(otpTimerInterval)clearInterval(otpTimerInterval);
-  otpTimerInterval=setInterval(()=>{
-    sec--;
-    if(sec>0){ timerEl.textContent='⏳ OTP '+sec+' sec mein expire hoga'; }
-    else{
-      clearInterval(otpTimerInterval);
-      timerEl.textContent='⌛ OTP expire ho gaya';
-      resendEl.style.display='block';
-    }
-  },1000);
-}
-
-async function resendOtp(){
-  document.getElementById('otp-resend-btn').style.display='none';
-  for(let i=0;i<6;i++){const b=document.getElementById('otp'+i);if(b)b.value='';}
-  document.getElementById('lm-err2').style.display='none';
-  // Reset recaptcha and go back to re-send
-  try{if(recaptchaVerifier)recaptchaVerifier.clear();}catch(e){}
-  recaptchaVerifier=null; initRecaptcha();
-  document.getElementById('lm-step1').classList.add('active');
-  document.getElementById('lm-step2').classList.remove('active');
-  // Auto-trigger send with stored phone
-  setTimeout(async()=>{ await loginSendOtp(); },300);
-}
-
-// OTP box navigation helpers
-function otpMove(idx, el){
-  const val=el.value.replace(/\D/g,'');
-  el.value=val.slice(-1);
-  if(val && idx<5) document.getElementById('otp'+(idx+1)).focus();
-  // Auto-verify when all 6 filled
-  const all=[...Array(6)].map((_,i)=>document.getElementById('otp'+i).value).join('');
-  if(all.length===6) loginVerifyOtp();
-}
-function otpKey(idx, e){
-  if(e.key==='Backspace' && !document.getElementById('otp'+idx).value && idx>0){
-    document.getElementById('otp'+(idx-1)).focus();
-  }
-}
-
-async function loginVerifyOtp(){
-  const code=[...Array(6)].map((_,i)=>document.getElementById('otp'+i).value).join('');
+async function loginStep2(){
   const err=document.getElementById('lm-err2');
-  const btn=document.getElementById('lm-verify-btn');
+  const dob=document.getElementById('lm-dob').value.trim();
   err.style.display='none';
-
-  if(code.length!==6||!/^\d{6}$/.test(code)){
-    err.textContent='⚠️ 6-digit OTP dalein'; err.style.display='block'; return;
+  if(!dob){err.textContent='⚠️ Date of Birth dalein';err.style.display='block';return;}
+  if(!loginDataTemp||!loginDataTemp.birthday){
+    err.textContent='❌ Account mein DOB save nahi hai';err.style.display='block';return;
   }
-  if(!otpConfirmResult){
-    err.textContent='❌ Session expire hua — dobara OTP mangao'; err.style.display='block'; return;
+  if(loginDataTemp.birthday.trim()!==dob.trim()){
+    err.textContent='❌ Date of Birth galat hai — dobara try karein';
+    err.style.display='block'; return;
   }
-
-  btn.disabled=true; btn.textContent='⏳ Verify ho raha hai...';
-
+  // Login success
+  cust=loginDataTemp;
   try{
-    await otpConfirmResult.confirm(code);
-    if(otpTimerInterval)clearInterval(otpTimerInterval);
-
-    // Load fresh customer data
-    cust = loginDataTemp;
-    try{
-      const fresh=await shopDb.customer(cust.id).get();
-      if(fresh&&fresh.exists) cust={id:fresh.id,...fresh.data()};
-    }catch(e){}
-    localStorage.setItem('rkh_cust',JSON.stringify(cust));
-    closeLoginModal();
-    loadDash(); goTo('s-dashboard');
-    toast('✅ Welcome back, '+cust.name.split(' ')[0]+' Ji! 🌯');
-  }catch(e){
-    let msg=e.message;
-    if(e.code==='auth/invalid-verification-code') msg='❌ OTP galat hai — dobara check karein';
-    else if(e.code==='auth/code-expired') msg='⌛ OTP expire ho gaya — dobara bhejein';
-    err.textContent=msg; err.style.display='block';
-  }finally{
-    btn.disabled=false; btn.textContent='✅ Verify & Login';
-  }
+    const fresh=await shopDb.customer(cust.id).get();
+    if(fresh&&fresh.exists)cust={id:fresh.id,...fresh.data()};
+  }catch(e){}
+  localStorage.setItem('rkh_cust',JSON.stringify(cust));
+  closeLoginModal();
+  loadDash();goTo('s-dashboard');
+  toast('✅ Welcome back, '+cust.name.split(' ')[0]+' Ji! 🌯');
 }
 
-// Keep these for backward compat (not used but referenced nowhere to crash)
-function loginBack(){}
-async function loginStep1(){}
-async function loginStep2(){}
+// Backward compat stubs
+function loginSendOtp(){}
+function loginVerifyOtp(){}
+function loginBackToPhone(){loginBack();}
+function resendOtp(){}
+function otpMove(){}
+function otpKey(){}
+function startOtpTimer(){}
+function initRecaptcha(){}
 
 // ===== INIT =====
 function initApp(){
@@ -1292,5 +1166,4 @@ async function submitHelp(){
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 </script>
 </body>
-</html>
-
+</html>  
