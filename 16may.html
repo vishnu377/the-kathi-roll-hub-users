@@ -1,4 +1,3 @@
- 
  <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -373,16 +372,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
     <div class="oc">
       <div class="oc-badge">10% OFF</div>
       <h3>🎁 Welcome Discount</h3>
-      <p>Pehli visit pe 10% off. Counter pe yeh code dikhao aur discount pao!</p>
-      <div class="code-box">
-        <div>
-          <span class="code-val" id="disc-code">ROLL????</span>
-          <div style="font-size:.65rem;color:var(--mid);margin-top:.2rem;" id="code-expiry-label">⏳ Join date se 7 din valid</div>
-        </div>
-        <button class="copy-btn" onclick="copyCode()">📋 Copy</button>
-      </div>
-      <div id="coupon-used-badge" style="display:none;background:rgba(46,125,50,.1);border:1px solid rgba(46,125,50,.25);border-radius:8px;padding:.4rem .8rem;margin-top:.6rem;font-size:.73rem;color:#2E7D32;font-weight:600;">✅ Welcome discount use ho gaya! Ab points se earn karo.</div>
-      <div id="coupon-expired-badge" style="display:none;background:rgba(211,47,47,.08);border:1px solid rgba(211,47,47,.2);border-radius:8px;padding:.4rem .8rem;margin-top:.6rem;font-size:.73rem;color:var(--red);font-weight:600;">⌛ Yeh code expire ho gaya — ab points use karo!</div>
+      <p>Aaj ya agli visit pe 10% off. Counter pe yeh code dikhao!</p>
+      <!-- ✅ FIX: Dynamic code — ROLL + phone last 4 digits -->
+      <div class="code-box"><span class="code-val" id="disc-code">ROLL????</span><button class="copy-btn" onclick="copyCode()">📋 Copy</button></div>
     </div>
     <div class="oc" style="border-left-color:var(--red);">
       <div class="oc-badge" style="background:var(--yellow2);color:var(--dark);font-size:1.8rem;">🎂 FREE</div>
@@ -489,7 +481,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown)
         <div class="rwd-info"><h4>Referral Reward</h4><p id="ref-sub">Refer karo — earn karo</p></div>
         <span class="rwd-tag" id="ref-tag">0 pts</span>
       </div>
-      <div class="rwd" id="welcome-rwd-card"><span class="rwd-icon">🎁</span><div class="rwd-info"><h4>Welcome Discount</h4><p id="welcome-rwd-sub">10% off — pehli visit pe</p></div><span class="rwd-tag" id="welcome-rwd-tag">Active</span></div>
+      <div class="rwd used"><span class="rwd-icon">🎁</span><div class="rwd-info"><h4>Welcome Discount</h4><p>10% off — used</p></div><span class="rwd-tag">Used ✓</span></div>
     </div>
     <div class="sec-head">👥 Referral — Earn Karo!</div>
     <div class="ref-prog">
@@ -848,9 +840,6 @@ async function completeRegistration(){
   // ✅ FIX 1: Dynamic welcome code on offer screen
   const welcomeCode=getWelcomeCode(phone);
   document.getElementById('disc-code').textContent=welcomeCode;
-  // Set expiry label on offer screen
-  const exLbl=document.getElementById('code-expiry-label');
-  if(exLbl)exLbl.textContent='⏳ 7 din valid — aaj se!';
   const bday=shopSettings.bdayReward||{};
   if(bday.text)document.getElementById('offer-bday-text').textContent=bday.text;
   const ms=(shopSettings.milestones||[]).filter(m=>m.active).sort((a,b)=>a.visit-b.visit)[0];
@@ -913,47 +902,10 @@ function loadDash(){
   const vw=document.getElementById('verified-badge-wrap');
   if(vw)vw.innerHTML=cust.phoneVerified?'<span style="color:#66bb6a;font-size:.68rem;">✅ Verified</span>':'<span style="color:rgba(255,214,0,.6);font-size:.68rem;">📱 '+esc(cust.phone)+'</span>';
 
-  // ✅ Dynamic welcome code + expiry/used status
+  // ✅ FIX 1: Dynamic welcome code on dashboard too (for offer screen access)
   const wCode=getWelcomeCode(cust.phone);
   const dcEl=document.getElementById('disc-code');
   if(dcEl)dcEl.textContent=wCode;
-
-  // Coupon expiry logic (7 days from join)
-  const couponExpiryDays=7;
-  const joinDays=cust.joinDate&&cust.joinDate.toMillis
-    ?Math.floor((Date.now()-cust.joinDate.toMillis())/86400000)
-    :0;
-  const couponExpired=joinDays>=couponExpiryDays;
-  const couponUsed=(cust.visits||0)>=1; // Used if at least 1 visit recorded
-
-  const expiryLbl=document.getElementById('code-expiry-label');
-  const usedBadge=document.getElementById('coupon-used-badge');
-  const expiredBadge=document.getElementById('coupon-expired-badge');
-
-  if(couponUsed){
-    if(expiryLbl)expiryLbl.style.display='none';
-    if(usedBadge)usedBadge.style.display='block';
-    if(expiredBadge)expiredBadge.style.display='none';
-    // Dashboard reward card
-    const wrwdSub=document.getElementById('welcome-rwd-sub');
-    const wrwdTag=document.getElementById('welcome-rwd-tag');
-    const wrwdCard=document.getElementById('welcome-rwd-card');
-    if(wrwdSub)wrwdSub.textContent='10% off — use ho gaya ✓';
-    if(wrwdTag){wrwdTag.textContent='Used ✓';wrwdTag.style.background='rgba(46,125,50,.1)';wrwdTag.style.color='#2E7D32';}
-    if(wrwdCard)wrwdCard.classList.add('used');
-  }else if(couponExpired){
-    if(expiryLbl)expiryLbl.style.display='none';
-    if(usedBadge)usedBadge.style.display='none';
-    if(expiredBadge)expiredBadge.style.display='block';
-    if(dcEl)dcEl.style.opacity='0.4';
-    const wrwdTag=document.getElementById('welcome-rwd-tag');
-    if(wrwdTag){wrwdTag.textContent='Expired';wrwdTag.style.background='rgba(211,47,47,.1)';wrwdTag.style.color='var(--red)';}
-  }else{
-    const daysLeft=couponExpiryDays-joinDays;
-    if(expiryLbl)expiryLbl.textContent='⏳ '+daysLeft+' din aur valid';
-    const wrwdTag=document.getElementById('welcome-rwd-tag');
-    if(wrwdTag){wrwdTag.textContent=daysLeft+'d left';wrwdTag.style.background='rgba(255,214,0,.15)';wrwdTag.style.color='var(--brown)';}
-  }
 
   // Tier
   let tier='🥈 Silver',fill=Math.min((pts/300)*100,100),from='Silver',to='Gold (300)',next='🥇 Gold ke liye '+(300-pts)+' aur points!';
@@ -1214,7 +1166,4 @@ async function submitHelp(){
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 </script>
 </body>
-</html>
- 
- 
- 
+</html>  
