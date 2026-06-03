@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Kathi Roll Hub — Special Offer!</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+try{
+firebase.initializeApp({
+  apiKey:"AIzaSyCErNYguHO8s4m5aeyGRQvM_PWV_9IzJKs",
+  authDomain:"the-kathi-roll-hub.firebaseapp.com",
+  projectId:"the-kathi-roll-hub",
+  storageBucket:"the-kathi-roll-hub.firebasestorage.app",
+  messagingSenderId:"684649816270",
+  appId:"1:684649816270:web:73dc4606b754702f6a309f"
+});
+}catch(e){}
+let db,shopDb;
+try{
+  db=firebase.firestore();
+  shopDb={
+    customers:()=>db.collection('rollhub_customers'),
+    customer:(id)=>db.collection('rollhub_customers').doc(id),
+    shopConfig:()=>db.collection('rollhub_config').doc('settings'),
+    qrScans:()=>db.collection('rollhub_qrscans')
+  };
+}catch(e){
+  shopDb={customers:()=>null,customer:()=>null,shopConfig:()=>null,qrScans:()=>null};
+}
+</script>
+<style>
+:root{
+  --yellow:#FFD600;--yellow2:#FFC000;--red:#D32F2F;--red2:#B71C1C;
+  --dark:#1A1A1A;--green:#2E7D32;--cream:#FFFDE7;--cream2:#FFF9C4;
+  --brown:#3E2000;--mid:#6D4C00;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--dark);
+  color:white;
+  min-height:100vh;
+  max-width:480px;
+  margin:0 auto;
+  overflow-x:hidden;
+}
+
+/* LOADING */
+#loading{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:var(--dark);
+}
+.spin{
+  width:44px;height:44px;border:3px solid rgba(255,214,0,.2);
+  border-top-color:var(--yellow);border-radius:50%;
+  animation:spin .8s linear infinite;margin-bottom:1rem;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HERO SECTION */
+.hero{
+  background:linear-gradient(160deg,#1a0800 0%,#2d1000 50%,#1a0800 100%);
+  padding:2rem 1.5rem 1.5rem;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(45deg,rgba(255,214,0,.02) 0,rgba(255,214,0,.02) 1px,transparent 1px,transparent 20px);
+}
+.brand{font-family:'Oswald',sans-serif;position:relative;z-index:1;}
+.brand .the{font-size:.85rem;color:rgba(255,255,255,.5);letter-spacing:4px;}
+.brand .name{font-size:2.4rem;line-height:1.1;font-weight:700;}
+.brand .name span:nth-child(1){color:var(--yellow);}
+.brand .name span:nth-child(2){color:white;}
+.brand .name span:nth-child(3){color:var(--red);}
+.brand .tag{font-size:.72rem;color:rgba(255,255,255,.4);letter-spacing:2px;margin-top:.3rem;}
+.award-pill{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:rgba(255,214,0,.12);border:1px solid rgba(255,214,0,.3);
+  color:var(--yellow);padding:.35rem .9rem;border-radius:50px;
+  font-size:.72rem;font-weight:600;margin-top:.8rem;position:relative;z-index:1;
+}
+
+/* OFFER CARD — New Customer */
+.offer-card{
+  margin:1rem 1.2rem;
+  background:linear-gradient(135deg,#2d1500,#1a0e00);
+  border:2px solid var(--yellow2);
+  border-radius:20px;padding:1.5rem;
+  position:relative;overflow:hidden;
+}
+.offer-card::before{
+  content:'🌯';position:absolute;right:-10px;top:-10px;
+  font-size:6rem;opacity:.08;
+}
+.offer-badge{
+  background:var(--red);
+  font-family:'Oswald',sans-serif;
+  font-size:2.8rem;font-weight:700;
+  color:white;display:inline-block;
+  padding:.2rem 1rem;border-radius:12px;
+  margin-bottom:.6rem;
+  animation:pulse 2s ease infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.offer-title{font-size:1rem;font-weight:600;color:white;margin-bottom:.3rem;}
+.offer-sub{font-size:.8rem;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:1.2rem;}
+.offer-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.3rem;}
+.chip{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.8);padding:.25rem .65rem;
+  border-radius:50px;font-size:.7rem;
+}
+
+/* PHONE INPUT */
+.phone-wrap{position:relative;margin-bottom:.8rem;}
+.phone-prefix{
+  position:absolute;left:.9rem;top:50%;transform:translateY(-50%);
+  font-size:.9rem;color:rgba(255,255,255,.5);pointer-events:none;
+}
+.phone-input{
+  width:100%;background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,214,0,.3);border-radius:14px;
+  padding:.85rem .9rem .85rem 2.4rem;
+  color:white;font-family:'DM Sans',sans-serif;font-size:1rem;
+  outline:none;transition:border-color .2s;
+  -webkit-appearance:none;
+}
+.phone-input:focus{border-color:var(--yellow);}
+.phone-input::placeholder{color:rgba(255,255,255,.3);}
+.phone-input::-webkit-inner-spin-button,
+.phone-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+
+.btn-claim{
+  width:100%;background:linear-gradient(135deg,var(--yellow),var(--yellow2));
+  color:var(--dark);border:none;padding:.95rem;border-radius:14px;
+  font-size:1rem;font-weight:700;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  box-shadow:0 6px 24px rgba(255,214,0,.3);
+  transition:all .2s;
+}
+.btn-claim:active{transform:scale(.98);}
+.btn-claim:disabled{opacity:.55;cursor:not-allowed;}
+.err-msg{
+  color:#ef5350;font-size:.78rem;margin-top:.4rem;
+  display:none;text-align:center;
+}
+
+/* RETURNING CUSTOMER SECTION */
+.ret-section{
+  margin:0 1.2rem 1rem;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;padding:1rem 1.1rem;
+  text-align:center;
+}
+.ret-title{font-size:.8rem;color:rgba(255,255,255,.5);margin-bottom:.3rem;}
+.ret-link{
+  color:var(--yellow);font-size:.85rem;font-weight:600;
+  text-decoration:none;cursor:pointer;
+}
+
+/* SUCCESS STATE — New Customer */
+.success-new{display:none;text-align:center;padding:0 1.2rem 1.5rem;}
+.success-emoji{font-size:3.5rem;display:block;margin-bottom:.6rem;animation:bounce 1s ease infinite alternate;}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.success-name{font-family:'Oswald',sans-serif;font-size:1.8rem;color:var(--yellow);margin-bottom:.3rem;}
+.success-sub{font-size:.83rem;color:rgba(255,255,255,.6);margin-bottom:1.2rem;line-height:1.5;}
+.code-box-qr{
+  background:rgba(255,214,0,.1);border:2px dashed var(--yellow2);
+  border-radius:14px;padding:.9rem 1rem;margin-bottom:1rem;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.code-val-qr{font-family:'Oswald',sans-serif;font-size:1.5rem;font-weight:700;color:var(--yellow);letter-spacing:3px;}
+.copy-btn-qr{
+  background:var(--yellow2);border:none;border-radius:8px;
+  padding:.35rem .8rem;font-size:.75rem;font-weight:700;
+  cursor:pointer;color:var(--dark);font-family:'DM Sans',sans-serif;
+}
+.pts-badge{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:rgba(46,125,50,.15);border:1px solid rgba(46,125,50,.3);
+  color:#66bb6a;padding:.4rem 1rem;border-radius:50px;
+  font-size:.8rem;font-weight:600;margin-bottom:1rem;
+}
+.btn-dashboard{
+  width:100%;background:var(--green);color:white;border:none;
+  padding:.9rem;border-radius:14px;font-size:.93rem;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:.7rem;
+}
+
+/* SUCCESS STATE — Returning Customer */
+.success-ret{display:none;padding:0 1.2rem 1.5rem;}
+.ret-card{
+  background:linear-gradient(135deg,#2d1500,#1a0e00);
+  border:2px solid var(--yellow2);border-radius:20px;
+  padding:1.3rem;margin-bottom:.8rem;
+}
+.ret-welcome{font-size:.78rem;color:rgba(255,255,255,.5);margin-bottom:.2rem;}
+.ret-name{font-family:'Oswald',sans-serif;font-size:1.6rem;color:var(--yellow);margin-bottom:.5rem;}
+.ret-pts{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.06);border-radius:10px;padding:.7rem .9rem;
+  margin-bottom:.7rem;
+}
+.ret-pts-num{font-family:'Oswald',sans-serif;font-size:1.8rem;font-weight:700;color:var(--yellow);}
+.ret-pts-lbl{font-size:.7rem;color:rgba(255,255,255,.5);}
+.offer-strip{
+  background:rgba(211,47,47,.15);border:1px solid rgba(211,47,47,.3);
+  border-radius:10px;padding:.7rem .9rem;margin-bottom:.7rem;
+  font-size:.82rem;color:white;line-height:1.5;
+}
+.offer-strip strong{color:var(--yellow);}
+.btn-full-dash{
+  width:100%;background:linear-gradient(135deg,var(--yellow),var(--yellow2));
+  color:var(--dark);border:none;padding:.9rem;border-radius:14px;
+  font-size:.95rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+
+/* ALREADY REG STATE */
+.already-reg{display:none;padding:0 1.2rem 1.5rem;text-align:center;}
+
+/* FOOTER */
+.footer{
+  text-align:center;padding:.8rem;
+  font-size:.62rem;color:rgba(255,255,255,.2);
+  border-top:1px solid rgba(255,255,255,.06);
+  margin-top:.5rem;
+}
+.open-badge{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:rgba(46,125,50,.15);border:1px solid rgba(46,125,50,.3);
+  color:#66bb6a;padding:.25rem .7rem;border-radius:50px;
+  font-size:.68rem;font-weight:600;margin-top:.6rem;
+}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--dark);border:1px solid var(--yellow);
+  color:var(--yellow);padding:.65rem 1.2rem;border-radius:50px;
+  font-size:.8rem;font-weight:600;z-index:9999;
+  transition:transform .3s ease;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spin"></div>
+  <div style="font-size:.8rem;color:rgba(255,255,255,.4);">Loading...</div>
+</div>
+
+<!-- MAIN CONTENT (hidden until loaded) -->
+<div id="main" style="display:none;">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="brand">
+      <div class="the">THE</div>
+      <div class="name">
+        <span>KATHI </span><span>ROLL </span><span>HUB</span>
+      </div>
+      <div class="tag">THE REAL TASTE OF KATHI ROLL</div>
+    </div>
+    <div class="award-pill">⭐ Zomato Top 10 Rolls — Jaipur 2025</div>
+    <div class="open-badge">🕐 24x7 OPEN · Murlipura</div>
+  </div>
+
+  <!-- STATE 1: NEW CUSTOMER OFFER -->
+  <div id="state-new">
+    <div class="offer-card">
+      <div class="offer-badge" id="offer-pct-badge">10% OFF</div>
+      <div class="offer-title">🎁 Pehli Visit pe Welcome Discount!</div>
+      <div class="offer-sub" id="offer-sub-text">Abhi phone number dalke join karo — discount code turant milega. FREE hai, koi jhanjhat nahi!</div>
+      <div class="offer-chips">
+        <span class="chip">🌯 Kathi Rolls</span>
+        <span class="chip">🥟 Momos</span>
+        <span class="chip">🍜 Chinese</span>
+        <span class="chip">🧃 Shakes</span>
+      </div>
+      <div class="phone-wrap">
+        <span class="phone-prefix">📱</span>
+        <input
+          class="phone-input" id="phone-input"
+          type="tel" inputmode="numeric"
+          placeholder="Apna mobile number..." maxlength="10"
+          onkeydown="if(event.key==='Enter')checkPhone()"
+        >
+      </div>
+      <div class="err-msg" id="err-msg"></div>
+      <button class="btn-claim" id="claim-btn" onclick="checkPhone()">
+        🚀 Join &amp; Get Discount →
+      </button>
+    </div>
+
+    <div class="ret-section">
+      <div class="ret-title">Pehle se member hain?</div>
+      <span class="ret-link" onclick="showReturnFlow()">👋 Login karein →</span>
+    </div>
+  </div>
+
+  <!-- STATE 2: SUCCESS — NEW CUSTOMER -->
+  <div id="state-success-new" class="success-new">
+    <span class="success-emoji">🎉</span>
+    <div class="success-name" id="sn-name">Welcome Ji!</div>
+    <div class="success-sub">Aap Roll Hub Loyalty Club mein aa gaye! Counter pe yeh code dikhao aur discount pao.</div>
+    <div class="pts-badge">⭐ <span id="sn-pts">50</span> Welcome Points Mile!</div>
+    <div class="code-box-qr">
+      <div>
+        <div class="code-val-qr" id="sn-code">ROLL????</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,.4);margin-top:.2rem;">⏳ 7 din valid</div>
+      </div>
+      <button class="copy-btn-qr" onclick="copyWelcomeCode()">📋 Copy</button>
+    </div>
+    <button class="btn-dashboard" onclick="goToDashboard()">📊 Mera Dashboard Dekho →</button>
+    <div style="font-size:.75rem;color:rgba(255,255,255,.4);text-align:center;">Counter pe code dikhao — cashier discount de dega!</div>
+  </div>
+
+  <!-- STATE 3: SUCCESS — RETURNING CUSTOMER -->
+  <div id="state-success-ret" class="success-ret">
+    <div class="ret-card">
+      <div class="ret-welcome">Welcome back!</div>
+      <div class="ret-name" id="sr-name">Loading...</div>
+      <div class="ret-pts">
+        <div>
+          <div class="ret-pts-num" id="sr-pts">0</div>
+          <div class="ret-pts-lbl">Loyalty Points</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:.8rem;font-weight:600;color:white;" id="sr-tier">🥈 Silver</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.4);">Tier</div>
+        </div>
+      </div>
+      <div class="offer-strip" id="sr-offer-strip">
+        🔥 <strong id="sr-visits">0</strong> visits ho gaye! Aage badhte raho — rewards aapka wait kar rahe hain!
+      </div>
+      <div id="sr-coupon-section" style="display:none;margin-bottom:.7rem;">
+        <div class="code-box-qr">
+          <div>
+            <div class="code-val-qr" id="sr-code">ROLL????</div>
+            <div style="font-size:.65rem;color:rgba(255,255,255,.4);margin-top:.2rem;" id="sr-code-lbl">⏳ Welcome code</div>
+          </div>
+          <button class="copy-btn-qr" onclick="copyRetCode()">📋 Copy</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn-full-dash" onclick="goToDashboard()">📊 Pura Dashboard Dekho →</button>
+  </div>
+
+  <!-- STATE 4: RETURNING LOGIN FORM -->
+  <div id="state-ret-login" style="display:none;padding:0 1.2rem 1.5rem;">
+    <div style="text-align:center;margin-bottom:1.2rem;">
+      <div style="font-size:1.5rem;margin-bottom:.4rem;">👋</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:1.2rem;color:var(--yellow);">Welcome Back!</div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.5);margin-top:.2rem;">Phone number dalein</div>
+    </div>
+    <div class="phone-wrap">
+      <span class="phone-prefix">📱</span>
+      <input
+        class="phone-input" id="ret-phone-input"
+        type="tel" inputmode="numeric"
+        placeholder="Registered mobile number..." maxlength="10"
+        onkeydown="if(event.key==='Enter')retLogin()"
+      >
+    </div>
+    <div class="err-msg" id="ret-err-msg"></div>
+    <button class="btn-claim" id="ret-login-btn" onclick="retLogin()" style="margin-top:.5rem;">
+      ✅ Dashboard Dekho →
+    </button>
+    <div style="text-align:center;margin-top:.8rem;">
+      <span onclick="showNewFlow()" style="color:rgba(255,255,255,.4);font-size:.78rem;cursor:pointer;text-decoration:underline;">← New member? Yahan join karo</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>Powered by <strong style="color:rgba(255,255,255,.3);">VishTech Software Services</strong></div>
+    <div style="margin-top:.3rem;">The Kathi Roll Hub · Murlipura, Jaipur</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let shopSettings={welcomePoints:50,bdayReward:{text:'FREE Roll + 15% off'},milestones:[{visit:5,reward:'Free Roll ya Momos',active:true}]};
+let foundCust=null;
+const USER_APP='https://the-kathi-roll-hub-users.vercel.app/';
+
+function esc(s){const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+function getCode(phone){return'ROLL'+(phone||'????').slice(-4);}
+function getTier(pts){if(pts>=700)return'💎 VIP';if(pts>=300)return'🥇 Gold';return'🥈 Silver';}
+
+async function init(){
+  // Load shop settings
+  try{
+    const s=await shopDb.shopConfig().get();
+    if(s&&s.exists){
+      const d=s.data();
+      shopSettings={...shopSettings,...d};
+      if(d.milestones)shopSettings.milestones=d.milestones;
+      if(d.bdayReward)shopSettings.bdayReward=d.bdayReward;
+    }
+  }catch(e){}
+
+  // Update UI with settings
+  const wp=shopSettings.welcomePoints||50;
+  document.getElementById('sn-pts').textContent=wp;
+  const offerSub=document.getElementById('offer-sub-text');
+  if(offerSub)offerSub.textContent=`Abhi join karo — ${wp} Welcome Points + 10% OFF pehli visit pe. FREE hai!`;
+
+  // Log QR scan
+  try{
+    await shopDb.qrScans().add({
+      timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+      source:'qr_landing',
+      userAgent:navigator.userAgent.substring(0,100)
+    });
+  }catch(e){}
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('main').style.display='block';
+}
+
+// ===== NEW CUSTOMER FLOW =====
+async function checkPhone(){
+  const phone=document.getElementById('phone-input').value.trim();
+  const err=document.getElementById('err-msg');
+  err.style.display='none';
+  if(!phone||phone.length!==10||!/^\d{10}$/.test(phone)){
+    err.textContent='⚠️ Sahi 10-digit number dalein';
+    err.style.display='block';return;
+  }
+  const btn=document.getElementById('claim-btn');
+  btn.disabled=true;btn.textContent='⏳ Check ho raha hai...';
+  try{
+    const s=await shopDb.customers().where('phone','==',phone).get();
+    if(!s.empty){
+      // Already registered — show their dashboard
+      const c={id:s.docs[0].id,...s.docs[0].data()};
+      showReturningSuccess(c);
+    }else{
+      // New customer — register karo
+      await registerNew(phone);
+    }
+  }catch(e){
+    err.textContent='❌ Error: '+e.message;err.style.display='block';
+    btn.disabled=false;btn.textContent='🚀 Join & Get Discount →';
+  }
+}
+
+async function registerNew(phone){
+  const id='RKH'+Date.now().toString().slice(-6)+Math.floor(Math.random()*10);
+  const welPts=shopSettings.welcomePoints||50;
+  const data={
+    id,phone,
+    name:'Naya Member',
+    birthday:null,anniversary:null,city:'Murlipura',
+    dishes:[],occasions:[],feedback:null,rating:null,
+    points:welPts,visits:0,referralCount:0,referralBonus:0,
+    referredBy:null,tier:'Silver',phoneVerified:false,
+    couponUsed:false,couponUsedAt:null,
+    joinDate:firebase.firestore.FieldValue.serverTimestamp(),
+    joinDateStr:new Date().toLocaleDateString('en-IN'),
+    lastVisit:firebase.firestore.FieldValue.serverTimestamp(),
+    lastVisitDays:0,totalSpend:0,active:true,
+    shop:'rollhub',
+    registeredVia:'qr_scan'
+  };
+  await shopDb.customer(id).set(data);
+  foundCust={...data,id};
+
+  // Show success
+  document.getElementById('state-new').style.display='none';
+  const sn=document.getElementById('state-success-new');
+  sn.style.display='block';
+  document.getElementById('sn-name').textContent='Welcome Ji! 🌯';
+  document.getElementById('sn-pts').textContent=welPts;
+  document.getElementById('sn-code').textContent=getCode(phone);
+
+  // Save to localStorage so user app auto-logs in
+  localStorage.setItem('rkh_cust',JSON.stringify({...data,id}));
+  toast('✅ Welcome! '+welPts+' points mile!');
+}
+
+// ===== RETURNING CUSTOMER FLOW =====
+function showReturnFlow(){
+  document.getElementById('state-new').style.display='none';
+  document.getElementById('state-ret-login').style.display='block';
+  setTimeout(()=>document.getElementById('ret-phone-input').focus(),300);
+}
+function showNewFlow(){
+  document.getElementById('state-ret-login').style.display='none';
+  document.getElementById('state-new').style.display='block';
+}
+
+async function retLogin(){
+  const phone=document.getElementById('ret-phone-input').value.trim();
+  const err=document.getElementById('ret-err-msg');
+  err.style.display='none';
+  if(!phone||phone.length!==10||!/^\d{10}$/.test(phone)){
+    err.textContent='⚠️ Sahi 10-digit number dalein';err.style.display='block';return;
+  }
+  const btn=document.getElementById('ret-login-btn');
+  btn.disabled=true;btn.textContent='⏳ Dhundh raha hoon...';
+  try{
+    const s=await shopDb.customers().where('phone','==',phone).get();
+    if(s.empty){
+      err.textContent='❌ Number registered nahi — pehle join karein!';
+      err.style.display='block';
+      btn.disabled=false;btn.textContent='✅ Dashboard Dekho →';
+      return;
+    }
+    const c={id:s.docs[0].id,...s.docs[0].data()};
+    showReturningSuccess(c);
+  }catch(e){
+    err.textContent='❌ Error: '+e.message;err.style.display='block';
+    btn.disabled=false;btn.textContent='✅ Dashboard Dekho →';
+  }
+}
+
+function showReturningSuccess(c){
+  foundCust=c;
+  // Hide all states
+  document.getElementById('state-new').style.display='none';
+  document.getElementById('state-ret-login').style.display='none';
+  document.getElementById('state-success-new').style.display='none';
+
+  // Show returning success
+  const sr=document.getElementById('state-success-ret');
+  sr.style.display='block';
+
+  const name=c.name&&c.name!=='Naya Member'?c.name.split(' ')[0]+' Ji':c.phone;
+  document.getElementById('sr-name').textContent=name+' 🌯';
+  document.getElementById('sr-pts').textContent=c.points||0;
+  document.getElementById('sr-tier').textContent=getTier(c.points||0);
+
+  const visits=c.visits||0;
+  const ms=(shopSettings.milestones||[]).filter(m=>m.active).sort((a,b)=>a.visit-b.visit);
+  const nextMs=ms.find(m=>m.visit>visits);
+  const stripEl=document.getElementById('sr-offer-strip');
+  if(nextMs){
+    const left=nextMs.visit-visits;
+    stripEl.innerHTML=`🔥 <strong>${left} aur visit</strong> mein milega: <strong style="color:var(--yellow);">"${nextMs.reward}"</strong>! Aate raho!`;
+  }else{
+    stripEl.innerHTML=`🏆 <strong>${visits} visits</strong> ho gaye! Aap champion hain! Aate raho rewards ke liye.`;
+  }
+
+  // Show coupon if active
+  const joinDays=c.joinDate&&c.joinDate.toMillis?Math.floor((Date.now()-c.joinDate.toMillis())/86400000):999;
+  const couponActive=!c.couponUsed&&joinDays<7;
+  const couponSec=document.getElementById('sr-coupon-section');
+  if(couponActive){
+    couponSec.style.display='block';
+    document.getElementById('sr-code').textContent=getCode(c.phone);
+    const daysLeft=7-joinDays;
+    document.getElementById('sr-code-lbl').textContent=`⏳ Welcome code — ${daysLeft}d left`;
+  }else{
+    couponSec.style.display='none';
+  }
+
+  // Save to localStorage
+  localStorage.setItem('rkh_cust',JSON.stringify(c));
+  toast('✅ Welcome back, '+name+'!');
+}
+
+function copyWelcomeCode(){
+  const code=document.getElementById('sn-code').textContent;
+  navigator.clipboard.writeText(code).then(()=>toast('✅ Code copy ho gaya!')).catch(()=>toast('Code: '+code));
+}
+function copyRetCode(){
+  const code=document.getElementById('sr-code').textContent;
+  navigator.clipboard.writeText(code).then(()=>toast('✅ Code copy ho gaya!')).catch(()=>toast('Code: '+code));
+}
+
+function goToDashboard(){
+  window.location.href=USER_APP;
+}
+
+window.onload=init;
+</script>
+</body>
+</html>
