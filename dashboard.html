@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Dashboard — Kathi Roll Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/customer.css"/>
+  <style>
+    body { background: var(--cream); color: #1a1a1a; display:block; padding-bottom:60px; }
+
+    /* ══ HERO ══════════════════════════════════════════════ */
+    .dash-hero {
+      padding: 20px 18px 48px;
+      position: relative; overflow: hidden;
+      transition: background 0.3s;
+    }
+    /* returning → black */
+    .dash-hero.returning  { background: var(--black); }
+    /* first time → orange gradient */
+    .dash-hero.first-time { background: linear-gradient(160deg,var(--red) 0%,var(--orange) 100%); }
+    /* default until JS loads */
+    .dash-hero            { background: var(--black); }
+
+    .dash-hero::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: repeating-linear-gradient(-45deg,transparent,transparent 28px,rgba(255,255,255,0.013) 28px,rgba(255,255,255,0.013) 29px);
+    }
+    .dash-hero::after {
+      content: ''; position: absolute; bottom: -22px; left:0; right:0;
+      height: 44px; background: var(--cream);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+    .hero-inner { position: relative; z-index: 1; }
+
+    .hero-top-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 18px;
+    }
+    .brand-sm {
+      font-family: var(--font-hd); font-size: 13px;
+      color: #2a2a2a; letter-spacing: 1.5px;
+    }
+    .btn-logout {
+      background: #161616; border: 1px solid #222; color: #555;
+      font-family: var(--font); font-size: 12px; font-weight: 800;
+      padding: 7px 14px; border-radius: 99px; cursor: pointer;
+      touch-action: manipulation; transition: color 0.15s;
+    }
+    .btn-logout:active { color: #fff; }
+
+    .hero-greeting { font-size: 12px; color: #3a3a3a; font-weight: 600; margin-bottom: 4px; }
+    .hero-name {
+      font-family: var(--font-hd); font-size: 28px; color: var(--white);
+      margin-bottom: 14px; line-height: 1.1;
+    }
+
+    /* Points pill */
+    .pts-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #111; border: 1.5px solid #222; border-radius: 99px;
+      padding: 9px 18px;
+    }
+    .pts-pill .star { font-size: 15px; }
+    .pts-val {
+      font-family: var(--font-hd); font-size: 22px;
+      color: var(--yellow); line-height: 1;
+    }
+    .pts-lbl { font-size: 12px; color: #444; font-weight: 700; }
+
+    /* First-time celebration banner (inside hero) */
+    #first-banner {
+      display: none;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px; padding: 12px 14px;
+      margin-top: 14px;
+      align-items: center; gap: 10px;
+      border: 1px solid rgba(255,255,255,0.15);
+      animation: slide-up 0.4s ease both;
+    }
+    #first-banner .fb-icon { font-size: 24px; flex-shrink: 0; }
+    #first-banner .fb-text { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.85); }
+
+    /* ══ BODY ══════════════════════════════════════════════ */
+    .body {
+      max-width: 480px; margin: 0 auto;
+      padding: 26px 14px 40px;
+    }
+
+    /* ── Stat Strip ── */
+    .stats {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 8px; margin-bottom: 18px;
+    }
+    .stat {
+      background: #fff; border-radius: 14px; padding: 14px 8px;
+      text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .stat .sv {
+      font-family: var(--font-hd); font-size: 24px;
+      color: #1a1a1a; line-height: 1; margin-bottom: 4px;
+    }
+    .stat .sv.r { color: var(--red); }
+    .stat .sl { font-size: 10px; color: #bbb; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+
+    /* ── Offer Banner ── */
+    #offer-banner {
+      display: none;
+      background: #fff8cc; border: 2px solid var(--yellow);
+      border-radius: 16px; padding: 14px 16px; margin-bottom: 16px;
+      align-items: center; gap: 12px;
+      animation: slide-up 0.35s ease both;
+    }
+    #offer-banner .ob-icon { font-size: 28px; flex-shrink: 0; }
+    #offer-banner h3 { font-size: 14px; font-weight: 800; color: #1a1a1a; margin-bottom: 2px; }
+    #offer-banner p  { font-size: 12px; color: #888; font-weight: 600; }
+
+    /* ── Section label (cream bg) ── */
+    .sec {
+      font-size: 10px; font-weight: 800; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--red);
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px; margin-top: 20px;
+    }
+    .sec:first-of-type { margin-top: 0; }
+    .sec::after { content:''; flex:1; height:1px; background:#ddd; }
+
+    /* ── Coupon Ticket ── */
+    .coupon-wrap {
+      background: #fff; border-radius: 18px;
+      overflow: hidden; position: relative;
+      margin-bottom: 6px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+    }
+    .coupon-wrap::before,.coupon-wrap::after {
+      content:''; position:absolute; width:18px; height:18px;
+      border-radius:50%; background:var(--cream);
+      top:50%; transform:translateY(-50%); z-index:2;
+    }
+    .coupon-wrap::before { left:-9px; }
+    .coupon-wrap::after  { right:-9px; }
+    .coupon-inner { display:flex; align-items:stretch; }
+    .c-tab {
+      width:64px; flex-shrink:0; background:#fff5f5;
+      border-right:1.5px dashed #f0e0e0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:16px 4px; gap:2px;
+    }
+    .c-tab .ctv {
+      font-family:var(--font-hd); font-size:15px;
+      color:var(--red); text-align:center; line-height:1.1;
+    }
+    .c-tab .cts {
+      font-size:9px; font-weight:800; color:#e57373;
+      text-transform:uppercase; letter-spacing:.06em; margin-top:3px;
+    }
+    .c-body { flex:1; padding:16px 14px; }
+    .c-title{ font-size:14px; font-weight:800; color:#1a1a1a; margin-bottom:3px; }
+    .c-desc { font-size:11.5px; color:#bbb; font-weight:600; margin-bottom:12px; line-height:1.5; }
+    .code-row {
+      background:#f8f8f8; border:1.5px dashed #e0e0e0; border-radius:10px;
+      padding:9px 12px; display:flex; align-items:center;
+      justify-content:space-between; gap:8px;
+    }
+    .code-val {
+      font-family:var(--font-hd); font-size:16px;
+      letter-spacing:3px; color:#1a1a1a;
+    }
+    .c-valid { font-size:10.5px; color:#ddd; font-weight:700; margin-top:8px; }
+
+    /* ── Streak Card ── */
+    .streak-card {
+      background:#fff; border-radius:18px; padding:18px 16px;
+      box-shadow:0 2px 10px rgba(0,0,0,.05); margin-bottom:2px;
+    }
+    .streak-top {
+      display:flex; justify-content:space-between;
+      align-items:flex-start; margin-bottom:14px;
+    }
+    .streak-top h3 { font-size:15px; font-weight:800; color:#1a1a1a; }
+    .streak-top p  { font-size:12px; color:#bbb; font-weight:600; margin-top:3px; }
+    .s-badge {
+      background:#fff8e1; color:#9a7000;
+      font-size:12px; font-weight:800;
+      padding:5px 13px; border-radius:99px; white-space:nowrap; flex-shrink:0;
+    }
+    .dots { display:flex; gap:7px; }
+    .dot { flex:1; height:10px; border-radius:99px; background:#f0f0f0; transition:background .3s; }
+    .dot.done { background:var(--yellow); }
+    .dot.goal { background:var(--green); }
+    .s-msg { font-size:12.5px; color:#bbb; font-weight:700; margin-top:10px; }
+    .s-msg.win { color:var(--green); font-weight:800; }
+
+    /* ── Referral Card ── */
+    .ref-card {
+      background:var(--black); border-radius:18px; padding:20px 16px;
+    }
+    .ref-card h3 { font-size:16px; font-weight:800; color:var(--yellow); margin-bottom:5px; }
+    .ref-card p  { font-size:12.5px; color:#444; font-weight:600; margin-bottom:16px; }
+    .ref-tiers { display:flex; gap:8px; margin-bottom:16px; }
+    .ref-tier {
+      flex:1; background:#141414; border:1.5px solid #1e1e1e;
+      border-radius:14px; padding:12px 6px; text-align:center;
+    }
+    .ref-tier.done { border-color:var(--green); background:#061206; }
+    .rt-num { font-family:var(--font-hd); font-size:22px; color:#2a2a2a; margin-bottom:3px; }
+    .ref-tier.done .rt-num { color:var(--green); }
+    .rt-pts { font-size:11px; color:#2a2a2a; font-weight:800; }
+    .ref-tier.done .rt-pts { color:#1a9a1a; }
+
+    .btn-ref {
+      width:100%; background:var(--yellow); color:var(--black);
+      font-family:var(--font); font-size:15px; font-weight:800;
+      padding:15px; border:none; border-radius:14px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:7px;
+      touch-action:manipulation; transition:transform .12s;
+    }
+    .btn-ref:active { transform:scale(.98); }
+
+    /* ── Feedback Card ── */
+    .fb-card {
+      background:#fff; border-radius:18px; padding:18px 16px;
+      box-shadow:0 2px 10px rgba(0,0,0,.05);
+    }
+    .fb-note { font-size:12px; color:#bbb; font-weight:600; margin-bottom:14px; }
+    .fb-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+    .fb-btn {
+      background:#f7f7f7; border:1.5px solid #efefef; border-radius:14px;
+      padding:13px 8px; font-family:var(--font); font-size:13px;
+      font-weight:800; color:#555;
+      display:flex; align-items:center; justify-content:center; gap:5px;
+      cursor:pointer; touch-action:manipulation; transition:all .12s;
+    }
+    .fb-btn:active { background:#fff0f0; border-color:var(--red); color:var(--red); transform:scale(.97); }
+    .fb-foot { font-size:11px; color:#ddd; font-weight:700; text-align:center; }
+
+    .btn-logout-full {
+      width:100%; background:transparent; color:#ccc;
+      font-family:var(--font); font-size:14px; font-weight:700;
+      padding:15px; border:1.5px solid #e8e8e8; border-radius:14px;
+      cursor:pointer; touch-action:manipulation; transition:all .15s;
+      margin-top:8px;
+    }
+    .btn-logout-full:active { border-color:var(--red); color:var(--red); }
+
+    /* ── Feedback Sheet ── */
+    .sheet-ov {
+      position:fixed; inset:0; background:rgba(0,0,0,.5);
+      z-index:100; opacity:0; pointer-events:none; transition:opacity .25s;
+    }
+    .sheet-ov.open { opacity:1; pointer-events:all; }
+    .sheet-box {
+      position:absolute; bottom:0; left:0; right:0;
+      background:#fff; border-radius:24px 24px 0 0;
+      padding:10px 18px 44px;
+      transform:translateY(100%);
+      transition:transform .3s cubic-bezier(.32,.72,0,1);
+    }
+    .sheet-ov.open .sheet-box { transform:translateY(0); }
+    .sh-handle { width:40px; height:4px; background:#e4e4e4; border-radius:99px; margin:8px auto 16px; }
+    .sh-h3 { font-size:18px; font-weight:800; color:#1a1a1a; margin-bottom:4px; }
+    .sh-p  { font-size:13px; color:#bbb; font-weight:600; margin-bottom:14px; }
+    .sh-ta {
+      width:100%; background:#f7f7f7; border:1.5px solid #efefef;
+      border-radius:14px; font-family:var(--font); font-size:15px;
+      color:#1a1a1a; padding:14px; resize:none; outline:none; height:120px;
+    }
+    .sh-ta:focus { border-color:#ccc; }
+    .sh-btns { display:flex; gap:10px; margin-top:12px; }
+    .sh-cancel {
+      flex:1; background:#f0f0f0; color:#888;
+      font-family:var(--font); font-size:15px; font-weight:800;
+      border:none; border-radius:14px; padding:15px; cursor:pointer;
+    }
+    .sh-send {
+      flex:2; background:var(--red); color:#fff;
+      font-family:var(--font); font-size:15px; font-weight:800;
+      border:none; border-radius:14px; padding:15px; cursor:pointer;
+      touch-action:manipulation; transition:transform .12s;
+    }
+    .sh-send:active { transform:scale(.98); }
+  </style>
+</head>
+<body>
+
+<!-- ══ HERO ════════════════════════════════════════════════ -->
+<div class="dash-hero" id="dash-hero">
+  <div class="hero-inner">
+    <div class="hero-top-row">
+      <div class="brand-sm">KATHI ROLL HUB</div>
+      <button class="btn-logout" onclick="window._dashLogout()">Logout</button>
+    </div>
+
+    <div class="hero-greeting" id="dash-greeting">Namaste 👋</div>
+    <div class="hero-name"     id="dash-name">...</div>
+
+    <div class="pts-pill">
+      <span class="star">⭐</span>
+      <span class="pts-val" id="dash-pts">0</span>
+      <span class="pts-lbl">Points</span>
+    </div>
+
+    <!-- First-time welcome strip -->
+    <div id="first-banner">
+      <div class="fb-icon">🎉</div>
+      <div class="fb-text">Welcome to the Loyalty Club! ₹200 cashback add ho gaya.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BODY ════════════════════════════════════════════════ -->
+<div class="body">
+
+  <!-- Stat Strip -->
+  <div class="stats">
+    <div class="stat"><div class="sv"   id="stat-visits">0</div><div class="sl">Visits</div></div>
+    <div class="stat"><div class="sv r" id="stat-saved">₹0</div><div class="sl">Bachaya</div></div>
+    <div class="stat"><div class="sv"   id="stat-refs">0</div>  <div class="sl">Referrals</div></div>
+  </div>
+
+  <!-- Offer Banner (admin-driven / birthday) -->
+  <div id="offer-banner">
+    <div class="ob-icon" id="banner-icon">🎁</div>
+    <div>
+      <h3 id="banner-title">Special Offer!</h3>
+      <p  id="banner-sub">Aaj ke liye</p>
+    </div>
+  </div>
+
+  <!-- COUPON -->
+  <div class="sec">🎟️ Mera Discount</div>
+  <div class="coupon-wrap">
+    <div class="coupon-inner">
+      <div class="c-tab">
+        <div class="ctv" id="coupon-pct">10%<br>OFF</div>
+        <div class="cts" id="coupon-label">Welcome</div>
+      </div>
+      <div class="c-body">
+        <div class="c-title">Welcome Discount</div>
+        <div class="c-desc">Counter pe yeh code dikhao — har order pe!</div>
+        <div class="code-row">
+          <div class="code-val" id="coupon-code">ROLL0000</div>
+          <button class="btn-copy" id="copy-btn">📋 Copy</button>
+        </div>
+        <div class="c-valid">🕐 Koi expiry nahi — hamesha valid</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISIT STREAK -->
+  <div class="sec">🔥 Visit Streak</div>
+  <div class="streak-card">
+    <div class="streak-top">
+      <div>
+        <h3 id="streak-title">FREE Item Reward</h3>
+        <p  id="streak-sub">5 visits pe FREE item!</p>
+      </div>
+      <div class="s-badge" id="streak-badge">0/5</div>
+    </div>
+    <div class="dots" id="streak-dots"></div>
+    <div class="s-msg" id="streak-msg">Aate raho — reward wait kar raha hai!</div>
+  </div>
+
+  <!-- REFERRAL -->
+  <div class="sec">👥 Dosto Ko Bulao</div>
+  <div class="ref-card">
+    <h3>Refer Karo — Points Kamao!</h3>
+    <p id="ref-sub">Loading...</p>
+    <div class="ref-tiers" id="ref-tiers"></div>
+    <button class="btn-ref" id="ref-share-btn">🔗 Referral Link Share Karo</button>
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="sec">💬 Help Chahiye?</div>
+  <div class="fb-card">
+    <div class="fb-note">Owner directly WhatsApp pe respond karega</div>
+    <div class="fb-grid">
+      <button class="fb-btn" onclick="openSheet('🚨 Complaint')">🚨 Complaint</button>
+      <button class="fb-btn" onclick="openSheet('❓ Query')">❓ Query</button>
+      <button class="fb-btn" onclick="openSheet('💡 Suggestion')">💡 Suggestion</button>
+      <button class="fb-btn" onclick="openSheet('❤️ Compliment')">❤️ Compliment</button>
+    </div>
+    <div class="fb-foot">WhatsApp pe forward ho jaayega</div>
+  </div>
+
+  <button class="btn-logout-full" onclick="window._dashLogout()">← Logout Karein</button>
+  <div class="powered" style="margin-top:16px">Powered by VishTech Software Services</div>
+</div>
+
+<!-- ══ FEEDBACK BOTTOM SHEET ══════════════════════════════ -->
+<div class="sheet-ov" id="sheet-ov" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet-box">
+    <div class="sh-handle"></div>
+    <div class="sh-h3" id="sh-title">Complaint</div>
+    <div class="sh-p">Apni baat likhein — seedha owner tak jaayegi</div>
+    <textarea class="sh-ta" id="sh-txt" placeholder="Yahan likhein..."></textarea>
+    <div class="sh-btns">
+      <button class="sh-cancel" onclick="closeSheet()">Cancel</button>
+      <button class="sh-send"   onclick="sendFeedback()">📤 WhatsApp pe Bhejo</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import {
+    initDashboard, handleLogout
+  } from './js/dashboard.js';
+
+  import { SHOP, LS } from '../shared/constants.js';
+
+  // ── Boot ──────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    initDashboard();
+  });
+
+  // ── Expose logout to onclick ──────────────────────────────
+  window._dashLogout = handleLogout;
+
+  // ── Feedback Sheet ───────────────────────────────────────
+  let fbType = '';
+
+  window.openSheet = function(type) {
+    fbType = type;
+    document.getElementById('sh-title').textContent = type;
+    document.getElementById('sh-txt').value = '';
+    document.getElementById('sheet-ov').classList.add('open');
+    setTimeout(() => document.getElementById('sh-txt').focus(), 350);
+  };
+
+  window.closeSheet = function() {
+    document.getElementById('sheet-ov').classList.remove('open');
+  };
+
+  window.sendFeedback = function() {
+    const txt = document.getElementById('sh-txt').value.trim();
+    if (!txt) { document.getElementById('sh-txt').focus(); return; }
+
+    // Get current user
+    const mob  = localStorage.getItem(LS.current) || '';
+    const users= JSON.parse(localStorage.getItem(LS.users) || '[]');
+    const user = users.find(u => u.mobile === mob);
+    const name = user?.name || 'Customer';
+    const wa   = SHOP.whatsapp;
+
+    // Save to LS for admin
+    const fbs = JSON.parse(localStorage.getItem('krh_feedback') || '[]');
+    fbs.unshift({ type:fbType, name, mobile:mob, msg:txt, time:new Date().toISOString() });
+    localStorage.setItem('krh_feedback', JSON.stringify(fbs));
+
+    // Open WhatsApp
+    const msg = encodeURIComponent(
+      `*${fbType}* — ${SHOP.name}\n\n*Customer:* ${name} (${mob})\n*Message:* ${txt}`
+    );
+    window.open(`https://wa.me/${wa}?text=${msg}`, '_blank');
+    window.closeSheet();
+  };
+</script>
+</body>
+</html>

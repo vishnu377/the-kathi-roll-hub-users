@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Join Loyalty Club — Kathi Roll Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/customer.css"/>
+  <style>
+    body {
+      background: var(--cream);
+      color: #1a1a1a;
+      padding-bottom: 100px;
+      display: block;
+      min-height: 100svh;
+    }
+
+    /* ── HEADER ── */
+    .reg-header {
+      background: var(--black);
+      padding: 16px 18px 36px;
+      position: relative;
+      overflow: hidden;
+    }
+    .reg-header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(-45deg,transparent,transparent 28px,rgba(255,255,255,0.012) 28px,rgba(255,255,255,0.012) 29px);
+      pointer-events: none;
+    }
+    .reg-header::after {
+      content: '';
+      position: absolute;
+      bottom: -20px; left: 0; right: 0;
+      height: 40px;
+      background: var(--cream);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+    .reg-header-inner { position: relative; z-index: 1; }
+    .reg-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .back-link {
+      color: #555;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .back-link:hover { color: #fff; }
+    .free-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: #333;
+      letter-spacing: 0.06em;
+    }
+    .reg-header h1 {
+      font-family: var(--font-hd);
+      font-size: 28px;
+      color: var(--yellow);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .reg-header p {
+      font-size: 13px;
+      color: #555;
+      font-weight: 600;
+    }
+
+    /* ── FORM WRAP ── */
+    .form-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 30px 16px 0;
+    }
+
+    /* ── SECTION LABEL (light bg override) ── */
+    .sec-lbl {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      margin-top: 22px;
+    }
+    .sec-lbl:first-child { margin-top: 0; }
+    .sec-lbl::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ddd;
+    }
+
+    /* ── FIELD ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #777;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      display: block;
+      margin-bottom: 7px;
+    }
+    .field label .req { color: var(--red); }
+    .field .hint {
+      font-size: 11.5px;
+      color: #bbb;
+      font-weight: 600;
+      margin-top: 5px;
+    }
+
+    /* ── INPUT (light surface) ── */
+    .inp-light {
+      width: 100%;
+      background: #fff;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 12px;
+      color: #1a1a1a;
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 600;
+      padding: 13px 16px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .inp-light:focus {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 3px rgba(255,214,0,0.12);
+    }
+    .inp-light::placeholder { color: #ccc; font-weight: 400; }
+    .inp-light.ok  { border-color: var(--green); }
+    .inp-light.err { border-color: var(--red);   }
+
+    /* ── DATE FIELD (light) ── */
+    .date-wrap-l { position: relative; }
+    .date-wrap-l .inp-light { padding-right: 46px; }
+    .date-wrap-l input[type=date] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; z-index: 2; width: 100%;
+    }
+    .cal-btn {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px; pointer-events: none; z-index: 1;
+    }
+
+    /* ── 2-COL GRID ── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width: 360px) { .row2 { grid-template-columns: 1fr; } }
+
+    /* ── FAVOURITE ITEMS GRID ── */
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-bottom: 12px;
+    }
+
+    .item-btn {
+      background: #fff;
+      border: 2px solid #e8e8e8;
+      border-radius: 14px;
+      padding: 14px 6px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.13s;
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .item-btn:active { transform: scale(0.95); }
+    .item-btn.on {
+      background: #fffbe6;
+      border-color: var(--yellow);
+    }
+    .item-btn .i-icon { font-size: 26px; display: block; margin-bottom: 6px; }
+    .item-btn .i-name {
+      font-size: 11px;
+      font-weight: 800;
+      color: #444;
+      line-height: 1.3;
+    }
+    .item-btn.on .i-name { color: #7a5f00; }
+
+    /* ── CUSTOM ADD ROW ── */
+    .add-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .add-row .inp-light { flex: 1; padding: 11px 14px; font-size: 14px; }
+    .btn-add {
+      background: var(--yellow);
+      color: var(--black);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 800;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 18px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      touch-action: manipulation;
+      transition: transform 0.12s;
+    }
+    .btn-add:active { transform: scale(0.96); }
+
+    .custom-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 6px;
+    }
+    .ctag {
+      background: #fffbe6;
+      border: 1.5px solid #ffe58f;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #7a5f00;
+      padding: 5px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .ctag button {
+      background: none;
+      border: none;
+      color: #cca800;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    /* ── OCCASION GRID ── */
+    .occ-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+    .occ-btn {
+      background: #fff;
+      border: 2px solid #e8e8e8;
+      border-radius: 14px;
+      padding: 13px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #444;
+      transition: all 0.13s;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .occ-btn:active { transform: scale(0.97); }
+    .occ-btn.on {
+      background: #fff0f0;
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* ── ERROR BOX ── */
+    .err-box {
+      background: #fff0f0;
+      border: 1.5px solid #ffc5c5;
+      border-radius: 12px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    /* ── FIXED SUBMIT ── */
+    .submit-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, var(--cream) 70%, transparent);
+      padding: 12px 16px 32px;
+      z-index: 50;
+    }
+
+    .btn-submit {
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      background: var(--red);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 17px;
+      font-weight: 800;
+      padding: 17px 20px;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(229,34,42,0.3);
+      transition: transform 0.12s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-submit:active { transform: scale(0.98); }
+
+    .btn-submit.loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="reg-header">
+  <div class="reg-header-inner">
+    <div class="reg-header-top">
+      <a href="index.html" class="back-link">← Wapas</a>
+      <span class="free-tag">FREE · Forever</span>
+    </div>
+    <h1>JOIN LOYALTY CLUB</h1>
+    <p>Register karo — 10% OFF turant milega!</p>
+  </div>
+</div>
+
+<!-- FORM -->
+<div class="form-wrap">
+
+  <div class="err-box" id="err-box"></div>
+
+  <!-- ── PERSONAL INFO ── -->
+  <div class="sec-lbl">👤 Teri Details</div>
+
+  <div class="field">
+    <label>Pura Naam <span class="req">*</span></label>
+    <input class="inp-light" type="text" id="f-name" placeholder="Aapka naam..." autocomplete="name"/>
+  </div>
+
+  <div class="field">
+    <label>Mobile Number <span class="req">*</span></label>
+    <input class="inp-light" type="tel" id="f-mob" maxlength="10" placeholder="9876543210" inputmode="numeric"/>
+  </div>
+
+  <div class="field">
+    <label>Date of Birth <span class="req">*</span></label>
+    <div class="date-wrap-l">
+      <input class="inp-light" type="text" id="f-dob-txt" placeholder="15 / 08 / 1995"
+        maxlength="10" inputmode="numeric" oninput="dobType('f-dob-txt','f-dob')"/>
+      <input type="date" id="f-dob" onchange="dobSync('f-dob','f-dob-txt')"/>
+      <span class="cal-btn">📅</span>
+    </div>
+    <p class="hint">Login ke liye bhi yahi use hogi — yaad rakhein 🔐</p>
+  </div>
+
+  <div class="row2">
+    <div class="field">
+      <label>Area / Mohalla</label>
+      <input class="inp-light" type="text" id="f-area" placeholder="e.g. Murlipura"/>
+    </div>
+    <div class="field">
+      <label>Anniversary</label>
+      <div class="date-wrap-l">
+        <input class="inp-light" type="text" id="f-ann-txt" placeholder="DD/MM/YYYY"
+          maxlength="10" inputmode="numeric" oninput="dobType('f-ann-txt','f-ann')"/>
+        <input type="date" id="f-ann" onchange="dobSync('f-ann','f-ann-txt')"/>
+        <span class="cal-btn">📅</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Ek Aur Khaas Din <span style="font-weight:400;text-transform:none;color:#ccc;font-size:11px">(optional)</span></label>
+    <div class="date-wrap-l">
+      <input class="inp-light" type="text" id="f-spd-txt" placeholder="DD/MM/YYYY"
+        maxlength="10" inputmode="numeric" oninput="dobType('f-spd-txt','f-spd')"/>
+      <input type="date" id="f-spd" onchange="dobSync('f-spd','f-spd-txt')"/>
+      <span class="cal-btn">📅</span>
+    </div>
+    <p class="hint">Exam day, job anniversary, graduation — offer bhejenge! 🎯</p>
+  </div>
+
+  <!-- ── FAVOURITE ITEMS ── -->
+  <div class="sec-lbl">🏷️ Favourite Items</div>
+
+  <div class="items-grid">
+    <button type="button" class="item-btn" data-item="Paneer Roll"  onclick="togItem(this)"><span class="i-icon">🧀</span><span class="i-name">Paneer Roll</span></button>
+    <button type="button" class="item-btn" data-item="Aloo Roll"   onclick="togItem(this)"><span class="i-icon">🥔</span><span class="i-name">Aloo Roll</span></button>
+    <button type="button" class="item-btn" data-item="Chaap Roll"  onclick="togItem(this)"><span class="i-icon">🌿</span><span class="i-name">Chaap Roll</span></button>
+    <button type="button" class="item-btn" data-item="Steam Momos" onclick="togItem(this)"><span class="i-icon">🥟</span><span class="i-name">Steam Momos</span></button>
+    <button type="button" class="item-btn" data-item="Fried Momos" onclick="togItem(this)"><span class="i-icon">🔥</span><span class="i-name">Fried Momos</span></button>
+    <button type="button" class="item-btn" data-item="Gravy Momos" onclick="togItem(this)"><span class="i-icon">🍲</span><span class="i-name">Gravy Momos</span></button>
+    <button type="button" class="item-btn" data-item="Cold Coffee" onclick="togItem(this)"><span class="i-icon">☕</span><span class="i-name">Cold Coffee</span></button>
+    <button type="button" class="item-btn" data-item="Choco Shake" onclick="togItem(this)"><span class="i-icon">🍫</span><span class="i-name">Choco Shake</span></button>
+    <button type="button" class="item-btn" data-item="Noodles"     onclick="togItem(this)"><span class="i-icon">🍜</span><span class="i-name">Noodles</span></button>
+  </div>
+
+  <div class="add-row">
+    <input class="inp-light" type="text" id="custom-inp" placeholder="Koi aur item..."/>
+    <button class="btn-add" onclick="addCustom()">+ Add</button>
+  </div>
+  <div class="custom-tags" id="custom-tags"></div>
+
+  <!-- ── KAB AATE HO ── -->
+  <div class="sec-lbl" style="margin-top:24px">🎉 Kab Aate Ho?</div>
+
+  <div class="occ-grid">
+    <button type="button" class="occ-btn" data-occ="Dost ke saath" onclick="togOcc(this)">👫 Dost ke saath</button>
+    <button type="button" class="occ-btn" data-occ="Family"        onclick="togOcc(this)">👨‍👩‍👧 Family</button>
+    <button type="button" class="occ-btn" data-occ="College"       onclick="togOcc(this)">🎓 College</button>
+    <button type="button" class="occ-btn" data-occ="Office"        onclick="togOcc(this)">💼 Office</button>
+    <button type="button" class="occ-btn" data-occ="Raat ko"       onclick="togOcc(this)">🌙 Raat ko</button>
+    <button type="button" class="occ-btn" data-occ="Party"         onclick="togOcc(this)">🎉 Party</button>
+  </div>
+
+  <div class="powered" style="margin-top:30px">
+    Powered by VishTech Software Services
+  </div>
+
+</div><!-- /form-wrap -->
+
+<!-- FIXED SUBMIT -->
+<div class="submit-bar">
+  <button class="btn-submit" id="submit-btn" onclick="handleRegister()">
+    🎁 Register &amp; Get Discount
+  </button>
+</div>
+
+<script type="module">
+  import { registerUser } from './js/auth.js';
+  import { LS }           from '../shared/constants.js';
+
+  // ── If already logged in → redirect ──────────────────────
+  const cur = localStorage.getItem(LS.current);
+  if (cur) {
+    const users = JSON.parse(localStorage.getItem(LS.users) || '[]');
+    if (users.find(u => u.mobile === cur)) window.location.href = 'dashboard.html';
+  }
+
+  // ── State ─────────────────────────────────────────────────
+  let selItems = [], custItems = [], selOcc = [];
+
+  // ── Date helpers (global so onclick works) ────────────────
+  window.dobType = function(txtId, hidId) {
+    let v = document.getElementById(txtId).value.replace(/\D/g, '');
+    if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+    if (v.length > 5) v = v.slice(0,5) + '/' + v.slice(5,9);
+    document.getElementById(txtId).value = v;
+    const p = v.split('/');
+    const el = document.getElementById(txtId);
+    if (p.length===3 && p[0].length===2 && p[1].length===2 && p[2].length===4) {
+      const iso = `${p[2]}-${p[1]}-${p[0]}`;
+      const d   = new Date(iso);
+      if (!isNaN(d.getTime()) && d.getFullYear() > 1900) {
+        document.getElementById(hidId).value = iso;
+        el.classList.add('ok'); el.classList.remove('err');
+      } else {
+        document.getElementById(hidId).value = '';
+        el.classList.add('err'); el.classList.remove('ok');
+      }
+    } else {
+      el.classList.remove('ok','err');
+      document.getElementById(hidId).value = '';
+    }
+  };
+
+  window.dobSync = function(hidId, txtId) {
+    const v = document.getElementById(hidId).value;
+    if (!v) return;
+    const [y,m,d] = v.split('-');
+    document.getElementById(txtId).value = `${d}/${m}/${y}`;
+    document.getElementById(txtId).classList.add('ok');
+    document.getElementById(txtId).classList.remove('err');
+  };
+
+  // ── Item toggle ───────────────────────────────────────────
+  window.togItem = function(el) {
+    const item = el.dataset.item;
+    el.classList.toggle('on');
+    if (el.classList.contains('on')) selItems.push(item);
+    else selItems = selItems.filter(i => i !== item);
+  };
+
+  // ── Custom item add ───────────────────────────────────────
+  window.addCustom = function() {
+    const inp = document.getElementById('custom-inp');
+    const v   = inp.value.trim();
+    if (!v || custItems.includes(v)) { inp.value = ''; return; }
+    custItems.push(v);
+    renderTags();
+    inp.value = '';
+  };
+
+  document.getElementById('custom-inp').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); window.addCustom(); }
+  });
+
+  function rmCustom(item) {
+    custItems = custItems.filter(i => i !== item);
+    renderTags();
+  }
+  window.rmCustom = rmCustom;
+
+  function renderTags() {
+    document.getElementById('custom-tags').innerHTML = custItems.map(i =>
+      `<div class="ctag">${i}<button onclick="rmCustom('${i}')">✕</button></div>`
+    ).join('');
+  }
+
+  // ── Occasion toggle ───────────────────────────────────────
+  window.togOcc = function(el) {
+    const occ = el.dataset.occ;
+    el.classList.toggle('on');
+    if (el.classList.contains('on')) selOcc.push(occ);
+    else selOcc = selOcc.filter(o => o !== occ);
+  };
+
+  // ── SUBMIT ────────────────────────────────────────────────
+  window.handleRegister = async function() {
+    const errEl = document.getElementById('err-box');
+    const btn   = document.getElementById('submit-btn');
+    errEl.style.display = 'none';
+
+    const name = document.getElementById('f-name').value.trim();
+    const mob  = document.getElementById('f-mob').value.trim();
+    const dob  = document.getElementById('f-dob').value;
+
+    // Validation
+    if (!name) { showErr('Naam zaroor dalein.'); return; }
+    if (mob.length !== 10 || isNaN(mob)) { showErr('Sahi 10-digit mobile number dalein.'); return; }
+    if (!dob)  { showErr('Date of Birth zaroor dalein — login ke liye chahiye.'); return; }
+
+    // Build user object
+    const userData = {
+      name,
+      mobile:      mob,
+      dob,
+      anniversary: document.getElementById('f-ann').value  || '',
+      area:        document.getElementById('f-area').value.trim() || '',
+      specialDay:  document.getElementById('f-spd').value  || '',
+      favItems:    [...selItems, ...custItems],
+      occasions:   selOcc,
+      referredBy:  sessionStorage.getItem('krh_ref') || '',
+      joined:      new Date().toISOString(),
+      visits:      0,
+      points:      200,
+      saved:       0,
+      referrals:   0,
+      dashVisited: false,
+    };
+
+    // Loading state
+    btn.classList.add('loading');
+    btn.textContent = '⏳ Saving...';
+
+    try {
+      const result = await registerUser(userData);
+
+      if (result.success) {
+        sessionStorage.removeItem('krh_ref');
+        window.location.href = 'success.html';
+      } else {
+        showErr(result.message || 'Kuch gadbad ho gayi. Try karo.');
+        btn.classList.remove('loading');
+        btn.innerHTML = '🎁 Register &amp; Get Discount';
+      }
+    } catch (err) {
+      showErr('Network error. Check karo aur try karo.');
+      btn.classList.remove('loading');
+      btn.innerHTML = '🎁 Register &amp; Get Discount';
+    }
+  };
+
+  function showErr(msg) {
+    const el = document.getElementById('err-box');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+</script>
+
+</body>
+</html>
