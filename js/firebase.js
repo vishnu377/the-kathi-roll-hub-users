@@ -1,3 +1,8 @@
+
+
+
+
+
 // ============================================================
 //  customer/js/firebase.js
 //  Customer side ka Firebase connection point
@@ -23,4 +28,4 @@ export {
   query,
   where,
   orderBy,
-} from '../../shared/firebase-config.js';
+} from '../shared/firebase-config.js';

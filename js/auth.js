@@ -1,3 +1,5 @@
+
+
 // ============================================================
 //  customer/js/auth.js  —  Firebase-FIRST version
 //  registerUser → Firestore setDoc
@@ -6,14 +8,14 @@
 //  LocalStorage: cache + offline fallback
 // ============================================================
 
-import { LS, POINTS, COLLECTIONS, DEFAULTS } from '../../shared/constants.js';
+import { LS, POINTS, COLLECTIONS, DEFAULTS } from '../shared/constants.js';
 
 // ── Firebase ─────────────────────────────────────────────────
 let db, docFn, setDocFn, getDocFn, updateDocFn, FIREBASE_READY = false;
 
 async function initFirebase() {
   try {
-    const cfg  = await import('../../shared/firebase-config.js');
+    const cfg  = await import('../shared/firebase-config.js');
     db          = cfg.db;
     docFn       = cfg.doc;
     setDocFn    = cfg.setDoc;
@@ -283,4 +285,3 @@ function _syncUserToLS(user) {
   else users.push(user);
   _lsSetUsers(users);
 }
-
