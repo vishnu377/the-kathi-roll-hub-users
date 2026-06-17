@@ -1,28 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ============================================================
 //  customer/js/dashboard.js  —  Firebase onSnapshot version
 // ============================================================
@@ -156,6 +132,22 @@ function _setupCopyDelegation() {
   });
 }
 
+// ── Format reward value based on its type (%, ₹, or free item) ──
+function _rewardLabel(rw) {
+  const type = rw.type || 'discount';
+  const val  = rw.value || rw.discountPct || 0;
+  if (type === 'cashback')  return '₹' + val + ' OFF';
+  if (type === 'free_item') return 'FREE ' + val;
+  return (parseInt(val) || 0) + '% OFF'; // discount (default)
+}
+function _rewardShortBadge(rw) {
+  const type = rw.type || 'discount';
+  const val  = rw.value || rw.discountPct || 0;
+  if (type === 'cashback')  return '₹' + val;
+  if (type === 'free_item') return '🎁';
+  return (parseInt(val) || 0) + '%';
+}
+
 // ── Rewards from admin ───────────────────────────────────────
 async function _loadActiveRewards() {
   if (!FIREBASE_READY) return;
@@ -203,8 +195,7 @@ async function _loadActiveRewards() {
       if (titleEl) titleEl.textContent = r.title || r.label || r.name || 'Special Offer!';
       let sub = '';
       if (r.description) sub += r.description;
-      const dpct = parseInt(r.discountPct) || 0;
-      if (dpct > 0) sub += (sub ? ' — ' : '') + dpct + '% OFF';
+      sub += (sub ? ' — ' : '') + _rewardLabel(r);
       if (r.code) sub += (sub ? ' · ' : '') + 'Code: ' + r.code;
       if (subEl) subEl.textContent = sub || 'Counter pe batao!';
     }
@@ -216,7 +207,7 @@ async function _loadActiveRewards() {
       secEl.style.display = 'block';
       let html = '';
       rewards.forEach(function(rw) {
-        const dpct    = parseInt(rw.discountPct) || 0;
+        const offLabel = _rewardLabel(rw);
         const title   = rw.title || rw.label || rw.name || 'Special Offer';
         const expiry  = rw.expiryDate
           ? 'Valid till: ' + new Date(rw.expiryDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
@@ -230,7 +221,7 @@ async function _loadActiveRewards() {
           + '<div style="flex:1">'
           + '<div style="font-size:15px;font-weight:800;color:#1a1a1a">' + title + '</div>';
         if (rw.description) topBar += '<div style="font-size:12px;color:#998a4a;font-weight:600;margin-top:2px;line-height:1.4">' + rw.description + '</div>';
-        if (dpct > 0) topBar += '<div style="font-size:13px;font-weight:700;color:#e5221a;margin-top:4px">' + dpct + '% OFF — Har order pe discount!</div>';
+        topBar += '<div style="font-size:13px;font-weight:700;color:#e5221a;margin-top:4px">' + offLabel + ' — Har order pe discount!</div>';
         topBar += '</div>';
         if (maxUses) topBar += '<div style="font-size:11px;font-weight:700;color:#aaa;flex-shrink:0">' + maxUses + '</div>';
         topBar += '</div>';
@@ -248,8 +239,8 @@ async function _loadActiveRewards() {
         }
 
         var footer = '<div style="padding:8px 16px;background:#fffdf0;border-top:1px solid #fff3b0;display:flex;justify-content:space-between;align-items:center">'
-          + '<div style="font-size:11px;color:#aaa;font-weight:600">🕐 ' + expiry + '</div>';
-        if (dpct > 0) footer += '<div style="font-size:12px;font-weight:800;color:#e5221a">' + dpct + '% Discount</div>';
+          + '<div style="font-size:11px;color:#aaa;font-weight:600">🕐 ' + expiry + '</div>'
+          + '<div style="font-size:12px;font-weight:800;color:#e5221a">' + offLabel + '</div>';
         footer += '</div>';
 
         html += '<div style="background:#fff;border:1.5px solid #ffe58f;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)">'
@@ -332,9 +323,9 @@ async function _loadRewardsHistory(preloadedAllActive) {
 
     used.forEach(function(rw) {
       const title = rw.title || rw.label || rw.name || 'Special Offer';
-      const dpct  = parseInt(rw.discountPct) || 0;
+      const offLabel = _rewardLabel(rw);
       const myAmt = rw.savedAmounts && rw.savedAmounts[mobile] ? parseInt(rw.savedAmounts[mobile]) || 0 : 0;
-      let subTxt = dpct > 0 ? (dpct + '% OFF redeem kiya') : 'Redeem kiya';
+      let subTxt = offLabel + ' redeem kiya';
       if (myAmt > 0) subTxt += ' · ₹' + myAmt + ' bachaye';
       html += '<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:10px">'
         + '<div style="font-size:20px;flex-shrink:0">✅</div>'
@@ -348,12 +339,12 @@ async function _loadRewardsHistory(preloadedAllActive) {
 
     expired.forEach(function(rw) {
       const title = rw.title || rw.label || rw.name || 'Special Offer';
-      const dpct  = parseInt(rw.discountPct) || 0;
+      const offLabel = _rewardLabel(rw);
       html += '<div style="background:#fafafa;border:1.5px solid #e8e8e8;border-radius:14px;padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:10px;opacity:.75">'
         + '<div style="font-size:20px;flex-shrink:0">⏳</div>'
         + '<div style="flex:1">'
         + '<div style="font-size:13px;font-weight:800;color:#888;text-decoration:line-through">' + title + '</div>'
-        + '<div style="font-size:11px;color:#bbb;font-weight:600;margin-top:2px">' + (dpct > 0 ? dpct + '% OFF — miss ho gaya' : 'Expire ho gaya') + '</div>'
+        + '<div style="font-size:11px;color:#bbb;font-weight:600;margin-top:2px">' + offLabel + ' — miss ho gaya</div>'
         + '</div>'
         + '<div style="font-size:10px;font-weight:800;color:#999;background:#eee;padding:3px 9px;border-radius:99px;flex-shrink:0">EXPIRED</div>'
         + '</div>';
@@ -564,3 +555,23 @@ function _flashElement(id) {
   el.style.color = '#22c55e';
   setTimeout(() => { el.style.color = ''; }, 600);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

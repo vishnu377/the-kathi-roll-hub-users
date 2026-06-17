@@ -1,5 +1,4 @@
 
-
 // ============================================================
 //  customer/js/auth.js  —  Firebase-FIRST version
 //  registerUser → Firestore setDoc
@@ -52,6 +51,7 @@ export async function registerUser(userData) {
   }
 
   // ── 2. Build full user object ───────────────────────────
+  const joinSource = sessionStorage.getItem('krh_src') || 'direct';
   const user = {
     ...userData,
     mobile,
@@ -62,6 +62,7 @@ export async function registerUser(userData) {
     socialDone:  {},
     socialPending: {},
     joined:      new Date().toISOString(),
+    joinSource:  joinSource,   // 'qr', 'direct', etc — tracks how customer found us
     dashVisited: false,
   };
 

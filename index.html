@@ -255,6 +255,10 @@
   const ref = new URLSearchParams(location.search).get('ref');
   if (ref) sessionStorage.setItem('krh_ref', ref);
 
+  // ── QR source tracking (e.g. ?src=qr from counter/table QR code) ──
+  const src = new URLSearchParams(location.search).get('src');
+  if (src) sessionStorage.setItem('krh_src', src);
+
   // ── STEP 1: Mobile → show DOB ────────────────────────────
   window.goNext = function () {
     const mob   = document.getElementById('mob-inp').value.trim();
@@ -341,3 +345,5 @@
 
 </body>
 </html>
+
+
