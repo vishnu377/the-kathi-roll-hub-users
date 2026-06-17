@@ -9,6 +9,17 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 // ============================================================
 //  customer/js/dashboard.js  —  Firebase onSnapshot version
 // ============================================================
@@ -126,20 +137,64 @@ async function _loadActiveRewards() {
     );
     const rewards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!rewards.length) return;
-    const r       = rewards[0];
-    const bannerEl = document.getElementById('offer-banner');
-    if (!bannerEl) return;
-    bannerEl.style.display = 'flex';
-    const iconEl  = document.getElementById('banner-icon');
-    const titleEl = document.getElementById('banner-title');
-    const subEl   = document.getElementById('banner-sub');
-    if (iconEl)  iconEl.textContent  = '🎁';
-    if (titleEl) titleEl.textContent = r.label || r.name || 'Special Offer!';
-    let sub = '';
-    const dpct = parseInt(r.discountPct) || 0; if (dpct > 0) sub += dpct + '% OFF';
-    if (r.code) sub += (sub ? ' — ' : '') + 'Code: ' + r.code;
-    if (subEl) subEl.textContent = sub || 'Counter pe batao!';
-    console.log('[rewards] Loaded:', r.label || r.name);
+
+    // ── 1. Show first reward in offer-banner (only if no birthday) ──
+    const bannerEl   = document.getElementById('offer-banner');
+    const currentTxt = document.getElementById('banner-title');
+    const hasBirthday = bannerEl &&
+      bannerEl.style.display === 'flex' &&
+      currentTxt &&
+      (currentTxt.textContent.includes('Birthday') || currentTxt.textContent.includes('birthday'));
+
+    if (!hasBirthday && bannerEl) {
+      const r = rewards[0];
+      bannerEl.style.display = 'flex';
+      const iconEl  = document.getElementById('banner-icon');
+      const titleEl = document.getElementById('banner-title');
+      const subEl   = document.getElementById('banner-sub');
+      if (iconEl)  iconEl.textContent  = '🎁';
+      if (titleEl) titleEl.textContent = r.label || r.name || 'Special Offer!';
+      let sub = '';
+      const dpct = parseInt(r.discountPct) || 0;
+      if (dpct > 0) sub += dpct + '% OFF';
+      if (r.code) sub += (sub ? ' — ' : '') + 'Code: ' + r.code;
+      if (subEl) subEl.textContent = sub || 'Counter pe batao!';
+    }
+
+    // ── 2. Show ALL rewards in dedicated section ──────────────────
+    const secEl  = document.getElementById('rewards-section');
+    const listEl = document.getElementById('rewards-list');
+    if (secEl && listEl) {
+      secEl.style.display = 'block';
+      listEl.innerHTML = rewards.map(function(rw) {
+        const dpct = parseInt(rw.discountPct) || 0;
+        let sub = '';
+        if (dpct > 0) sub += dpct + '% OFF';
+        if (rw.code) sub += (sub ? ' · ' : '') + 'Code: ' + rw.code;
+        const expiry = rw.expiresAt
+          ? 'Expires: ' + new Date(rw.expiresAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'})
+          : 'No expiry';
+        return '<div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">' +
+          '<div style="font-size:28px;flex-shrink:0">🎁</div>' +
+          '<div style="flex:1">' +
+            '<div style="font-size:14px;font-weight:800;color:#1a1a1a;margin-bottom:3px">' + (rw.label || rw.name || 'Offer') + '</div>' +
+            '<div style="font-size:13px;font-weight:700;color:#e5221a;margin-bottom:2px">' + (sub || 'Counter pe batao!') + '</div>' +
+            '<div style="font-size:11px;color:#aaa;font-weight:600">' + expiry + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // ── 3. Save to LS for admin tracking ─────────────────────────
+    const mobile = user ? user.mobile : 'guest';
+    const track  = JSON.parse(localStorage.getItem('krh_user_rewards') || '{}');
+    track[mobile] = {
+      rewards:   rewards.map(r => ({ id: r.id, label: r.label || r.name, code: r.code })),
+      seenAt:    new Date().toISOString(),
+    };
+    localStorage.setItem('krh_user_rewards', JSON.stringify(track));
+    console.log('[rewards] Loaded ' + rewards.length + ' rewards for ' + mobile);
+
   } catch(e) {
     console.warn('[rewards] fetch failed:', e.message);
   }
