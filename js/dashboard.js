@@ -1,12 +1,19 @@
-
 // ============================================================
 //  customer/js/dashboard.js  —  Firebase onSnapshot version
+//
+//  3 Live Hooks:
+//  1. onSnapshot(users/mobile)       → points, visits, UI update
+//  2. onSnapshot(settings/config)    → banner, offers update
+//  3. renderAll()                    → full UI bind from data
+//
+//  No more setInterval jugaad — pure real-time!
 // ============================================================
 
 import { LS, SHOP, DEFAULTS, COLLECTIONS } from '../shared/constants.js';
 import { getCurrentUserSync, logoutUser, generateCouponCode } from './auth.js';
 
-let db, docFn, onSnapshotFn, getDocs, queryFn, whereFn, collFn, FIREBASE_READY = false;
+// ── Firebase ─────────────────────────────────────────────────
+let db, docFn, onSnapshotFn, getDocFn, getDocs, queryFn, whereFn, collFn, FIREBASE_READY = false;
 
 async function initFirebase() {
   try {
@@ -14,6 +21,7 @@ async function initFirebase() {
     db           = cfg.db;
     docFn        = cfg.doc;
     onSnapshotFn = cfg.onSnapshot;
+    getDocFn     = cfg.getDoc;
     getDocs      = cfg.getDocs;
     queryFn      = cfg.query;
     whereFn      = cfg.where;
@@ -22,84 +30,148 @@ async function initFirebase() {
     console.log('[dashboard.js] Firebase connected ✅');
   } catch (e) {
     FIREBASE_READY = false;
-    console.warn('[dashboard.js] Firebase offline', e.message);
+    console.warn('[dashboard.js] Firebase offline — polling fallback', e.message);
   }
 }
 
-let user = null, settings = {}, unsubUser = null, unsubSett = null, _polls = [];
+// ── State ─────────────────────────────────────────────────────
+let user      = null;
+let settings  = {};
+let unsubUser = null;   // Firestore unsubscribe fn
+let unsubSett = null;   // Firestore settings unsubscribe
+let _polls    = [];     // setInterval handles (fallback only)
 
+// ============================================================
+//  initDashboard()
+//  DOMContentLoaded pe call karo
+// ============================================================
 export async function initDashboard() {
+
+  // ── Auth guard ──────────────────────────────────────────
   user = getCurrentUserSync();
   if (!user) { window.location.href = 'index.html'; return; }
+
+  // ── Load cached settings ────────────────────────────────
   settings = JSON.parse(localStorage.getItem(LS.settings) || '{}');
+
+  // ── Initial render with cached data ─────────────────────
   renderAll(user, settings);
+
+  // ── Firebase connect then start live listeners ───────────
   await initFirebase();
+
+  // ── HOOK 1: Real-time user data ──────────────────────────
   _startUserListener(user.mobile);
+
+  // ── HOOK 2: Real-time settings / admin offers ────────────
   _startSettingsListener();
+
+  // ── HOOK 3: Active Rewards + History ─────────────────────
   _loadActiveRewards();
   _setupCopyDelegation();
   _startRewardsPoll();
+
+  // ── HOOK 4: Menu ──────────────────────────────────────────
+  _loadMenu();
 }
 
+// ============================================================
+//  HOOK 1 — Real-time User Listener
+//  Firebase: onSnapshot → instant update
+//  Fallback: 3s polling if Firebase not available
+// ============================================================
 function _startUserListener(mobile) {
   if (FIREBASE_READY) {
+    // ── Firebase onSnapshot ─────────────────────────────────
     unsubUser = onSnapshotFn(
       docFn(db, COLLECTIONS.users, mobile),
       (snap) => {
         if (!snap.exists()) return;
         const fresh = snap.data();
+
+        // Sync to LS cache
         _syncToLS(fresh);
+
+        // Detect actual changes before re-render
         if (JSON.stringify(fresh) !== JSON.stringify(user)) {
           user = fresh;
           renderAll(user, settings);
+          // Subtle flash on points change
           _flashElement('stat-pts');
         }
       },
-      (err) => { console.error('[onSnapshot user]', err); _fallbackUserPoll(mobile); }
+      (err) => {
+        console.error('[onSnapshot user] Error:', err);
+        _fallbackUserPoll(mobile);
+      }
     );
-  } else { _fallbackUserPoll(mobile); }
+
+  } else {
+    _fallbackUserPoll(mobile);
+  }
 }
 
 function _fallbackUserPoll(mobile) {
-  let last = JSON.stringify(user);
+  let lastSeen = JSON.stringify(user);
   const id = setInterval(() => {
     const users = JSON.parse(localStorage.getItem(LS.users) || '[]');
     const fresh = users.find(u => u.mobile === mobile);
     if (!fresh) return;
     const str = JSON.stringify(fresh);
-    if (str !== last) { last = str; user = fresh; renderAll(user, settings); }
+    if (str !== lastSeen) {
+      lastSeen = str;
+      user = fresh;
+      renderAll(user, settings);
+    }
   }, 3000);
   _polls.push(id);
 }
 
+// ============================================================
+//  HOOK 2 — Admin Settings / Announcement Listener
+//  Admin settings change → banner/offers turant update
+// ============================================================
 function _startSettingsListener() {
   if (FIREBASE_READY) {
+    // COLLECTIONS.settings = "rollhub_config"
+    // Document ID = "settings" (ya "config" — constants.js se)
     unsubSett = onSnapshotFn(
       docFn(db, COLLECTIONS.settings, 'settings'),
       (snap) => {
         if (!snap.exists()) return;
         const fresh = snap.data();
+
+        // Sync to LS
         localStorage.setItem(LS.settings, JSON.stringify(fresh));
+
         if (JSON.stringify(fresh) !== JSON.stringify(settings)) {
           settings = fresh;
+          // Partial re-render — sirf offer-related UI
           renderOfferBanner(user, settings);
           renderStreak(user, settings);
           renderReferral(user, settings);
           renderCoupon(user, settings);
         }
       },
-      (err) => { console.warn('[onSnapshot settings]', err); _fallbackSettingsPoll(); }
+      (err) => {
+        console.warn('[onSnapshot settings] Error:', err);
+        _fallbackSettingsPoll();
+      }
     );
-  } else { _fallbackSettingsPoll(); }
+
+  } else {
+    _fallbackSettingsPoll();
+  }
 }
 
 function _fallbackSettingsPoll() {
-  let last = JSON.stringify(settings);
+  let lastSett = JSON.stringify(settings);
   const id = setInterval(() => {
     const fresh = JSON.parse(localStorage.getItem(LS.settings) || '{}');
-    const str = JSON.stringify(fresh);
-    if (str !== last) {
-      last = str; settings = fresh;
+    const str   = JSON.stringify(fresh);
+    if (str !== lastSett) {
+      lastSett = str;
+      settings = fresh;
       renderOfferBanner(user, settings);
       renderStreak(user, settings);
       renderReferral(user, settings);
@@ -109,10 +181,13 @@ function _fallbackSettingsPoll() {
   _polls.push(id);
 }
 
-// ── Poll rewards every 15s so used/expired coupons disappear live ──
-function _startRewardsPoll() {
-  const id = setInterval(_loadActiveRewards, 15000);
-  _polls.push(id);
+// ── Format reward value based on its type (%, ₹, or free item) ──
+function _rewardLabel(rw) {
+  const type = rw.type || 'discount';
+  const val  = rw.value || rw.discountPct || 0;
+  if (type === 'cashback')  return '₹' + val + ' OFF';
+  if (type === 'free_item') return 'FREE ' + val;
+  return (parseInt(val) || 0) + '% OFF';
 }
 
 // ── Event delegation for copy buttons — NO inline onclick needed ──
@@ -132,23 +207,15 @@ function _setupCopyDelegation() {
   });
 }
 
-// ── Format reward value based on its type (%, ₹, or free item) ──
-function _rewardLabel(rw) {
-  const type = rw.type || 'discount';
-  const val  = rw.value || rw.discountPct || 0;
-  if (type === 'cashback')  return '₹' + val + ' OFF';
-  if (type === 'free_item') return 'FREE ' + val;
-  return (parseInt(val) || 0) + '% OFF'; // discount (default)
-}
-function _rewardShortBadge(rw) {
-  const type = rw.type || 'discount';
-  const val  = rw.value || rw.discountPct || 0;
-  if (type === 'cashback')  return '₹' + val;
-  if (type === 'free_item') return '🎁';
-  return (parseInt(val) || 0) + '%';
+// ── Poll rewards every 15s so used/expired coupons disappear live ──
+function _startRewardsPoll() {
+  const id = setInterval(_loadActiveRewards, 15000);
+  _polls.push(id);
 }
 
-// ── Rewards from admin ───────────────────────────────────────
+// ============================================================
+//  ACTIVE REWARDS from admin
+// ============================================================
 async function _loadActiveRewards() {
   if (!FIREBASE_READY) return;
   try {
@@ -157,33 +224,25 @@ async function _loadActiveRewards() {
     );
     const allRewards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // ── Filter out rewards this customer already used (singleUse) ──
     const mobile0 = user ? user.mobile : null;
     const rewards = allRewards.filter(function(rw) {
-      if (rw.singleUse && rw.usedBy && mobile0 && rw.usedBy.indexOf(mobile0) !== -1) {
-        return false; // already used by this customer — hide it
-      }
-      if (rw.maxUses && (rw.usageCount || 0) >= rw.maxUses) {
-        return false; // global limit reached — hide for everyone
-      }
+      if (rw.singleUse && rw.usedBy && mobile0 && rw.usedBy.indexOf(mobile0) !== -1) return false;
+      if (rw.maxUses && (rw.usageCount || 0) >= rw.maxUses) return false;
       return true;
     });
 
     if (!rewards.length) {
-      // No active rewards left for this user — hide section
       const secEl = document.getElementById('rewards-section');
       if (secEl) secEl.style.display = 'none';
-      _loadRewardsHistory(allRewards);
+      _loadRewardsHistory();
       return;
     }
 
-    // ── 1. Show first reward in offer-banner (only if no birthday) ──
+    // Show first reward in offer banner (skip if birthday already showing)
     const bannerEl   = document.getElementById('offer-banner');
     const currentTxt = document.getElementById('banner-title');
-    const hasBirthday = bannerEl &&
-      bannerEl.style.display === 'flex' &&
-      currentTxt &&
-      (currentTxt.textContent.indexOf('Birthday') !== -1);
+    const hasBirthday = bannerEl && bannerEl.style.display === 'flex' &&
+      currentTxt && currentTxt.textContent.indexOf('Birthday') !== -1;
 
     if (!hasBirthday && bannerEl) {
       const r = rewards[0];
@@ -200,12 +259,17 @@ async function _loadActiveRewards() {
       if (subEl) subEl.textContent = sub || 'Counter pe batao!';
     }
 
-    // ── 2. Show ALL rewards in dedicated section ──────────────────
+    // Show ALL rewards in scrollable section with search
     const secEl  = document.getElementById('rewards-section');
     const listEl = document.getElementById('rewards-list');
     if (secEl && listEl) {
       secEl.style.display = 'block';
-      let html = '';
+
+      let searchHtml = '<input type="text" id="rewards-search" placeholder="🔍 Offer search karo..." '
+        + 'style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #efefef;border-radius:12px;font-family:var(--font);font-size:13px;margin-bottom:10px;outline:none" '
+        + 'oninput="window._filterRewards(this.value)"/>';
+
+      let cardsHtml = '<div id="rewards-scroll" style="max-height:340px;overflow-y:auto;padding-right:2px">';
       rewards.forEach(function(rw) {
         const offLabel = _rewardLabel(rw);
         const title   = rw.title || rw.label || rw.name || 'Special Offer';
@@ -215,7 +279,6 @@ async function _loadActiveRewards() {
         const maxUses = rw.maxUses ? (rw.usageCount||0) + '/' + rw.maxUses + ' used' : '';
         const code    = rw.code || '';
 
-        // Build card pieces separately
         var topBar = '<div style="background:linear-gradient(90deg,#fff8cc,#fff3b0);padding:14px 16px;border-bottom:1.5px dashed #ffe58f;display:flex;align-items:center;gap:10px">'
           + '<div style="font-size:26px">🎁</div>'
           + '<div style="flex:1">'
@@ -240,40 +303,42 @@ async function _loadActiveRewards() {
 
         var footer = '<div style="padding:8px 16px;background:#fffdf0;border-top:1px solid #fff3b0;display:flex;justify-content:space-between;align-items:center">'
           + '<div style="font-size:11px;color:#aaa;font-weight:600">🕐 ' + expiry + '</div>'
-          + '<div style="font-size:12px;font-weight:800;color:#e5221a">' + offLabel + '</div>';
-        footer += '</div>';
+          + '<div style="font-size:12px;font-weight:800;color:#e5221a">' + offLabel + '</div></div>';
 
-        html += '<div style="background:#fff;border:1.5px solid #ffe58f;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)">'
+        cardsHtml += '<div class="rw-card" data-search="' + (title + ' ' + (rw.description||'')).toLowerCase() + '" '
+          + 'style="background:#fff;border:1.5px solid #ffe58f;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)">'
           + topBar + codeSection + footer + '</div>';
       });
-      listEl.innerHTML = html;
+      cardsHtml += '</div>';
+
+      listEl.innerHTML = searchHtml + cardsHtml;
     }
 
-    // ── 3. Save to LS for admin tracking ─────────────────────────
     const mobile = user ? user.mobile : 'guest';
     const track  = JSON.parse(localStorage.getItem('krh_user_rewards') || '{}');
-    track[mobile] = {
-      rewards:   rewards.map(r => ({ id: r.id, label: r.title || r.label || r.name, code: r.code })),
-      seenAt:    new Date().toISOString(),
-    };
+    track[mobile] = { rewards: rewards.map(r => ({ id: r.id, label: r.title || r.label || r.name, code: r.code })), seenAt: new Date().toISOString() };
     localStorage.setItem('krh_user_rewards', JSON.stringify(track));
-    console.log('[rewards] Loaded ' + rewards.length + ' rewards for ' + mobile);
 
-    // ── 4. Load history (used + expired) — needs ALL rewards, not just active ──
-    _loadRewardsHistory(null);
-
+    _loadRewardsHistory();
   } catch(e) {
     console.warn('[rewards] fetch failed:', e.message);
   }
 }
 
+window._filterRewards = function(q) {
+  q = (q || '').toLowerCase();
+  document.querySelectorAll('.rw-card').forEach(function(card) {
+    const match = card.getAttribute('data-search').indexOf(q) !== -1;
+    card.style.display = match ? 'block' : 'none';
+  });
+};
+
 // ============================================================
 //  REWARDS HISTORY — Used + Expired (builds trust + FOMO)
 // ============================================================
-async function _loadRewardsHistory(preloadedAllActive) {
+async function _loadRewardsHistory() {
   if (!FIREBASE_READY || !user) return;
   try {
-    // Fetch the COMPLETE rewards collection (active + inactive, all of them)
     const snap = await getDocs(collFn(db, 'rewards'));
     const all  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const today = new Date();
@@ -285,42 +350,26 @@ async function _loadRewardsHistory(preloadedAllActive) {
     all.forEach(function(rw) {
       const wasUsedByMe = rw.usedBy && rw.usedBy.indexOf(mobile) !== -1;
       const isExpired = rw.expiryDate && new Date(rw.expiryDate) < today;
-      const isMaxedOut = rw.maxUses && (rw.usageCount || 0) >= rw.maxUses;
-
-      if (wasUsedByMe) {
-        used.push(rw);
-      } else if ((isExpired || isMaxedOut || !rw.active) && !wasUsedByMe) {
-        // Only show as "missed" if it was potentially relevant — skip silently otherwise
-        // (we don't have per-user eligibility history, so show generically as expired)
-        if (isExpired || (!rw.active && rw.createdAt)) expired.push(rw);
-      }
+      if (wasUsedByMe) { used.push(rw); }
+      else if (isExpired || (!rw.active && rw.createdAt)) { expired.push(rw); }
     });
 
-    const histSecEl = document.getElementById('rewards-history-section');
+    const histSecEl  = document.getElementById('rewards-history-section');
     const histListEl = document.getElementById('rewards-history-list');
-    const savedEl = document.getElementById('rewards-total-saved');
-
+    const savedEl    = document.getElementById('rewards-total-saved');
     if (!histSecEl) return;
 
-    if (used.length === 0 && expired.length === 0) {
-      histSecEl.style.display = 'none';
-      return;
-    }
+    if (used.length === 0 && expired.length === 0) { histSecEl.style.display = 'none'; return; }
     histSecEl.style.display = 'block';
 
-    // ── Calculate THIS customer's total savings from savedAmounts map ──
     let totalSaved = 0;
     used.forEach(function(rw) {
       const myAmt = rw.savedAmounts && rw.savedAmounts[mobile] ? parseInt(rw.savedAmounts[mobile]) || 0 : 0;
       totalSaved += myAmt;
     });
-    if (savedEl) {
-      savedEl.textContent = totalSaved > 0 ? ('₹' + totalSaved) : (used.length + ' offers redeemed');
-    }
+    if (savedEl) savedEl.textContent = totalSaved > 0 ? ('₹' + totalSaved) : (used.length + ' offers redeemed');
 
-    // ── Build history list (used first, then expired) ──
-    let html = '';
-
+    let html = '<div id="rewards-history-scroll" style="max-height:280px;overflow-y:auto;padding-right:2px">';
     used.forEach(function(rw) {
       const title = rw.title || rw.label || rw.name || 'Special Offer';
       const offLabel = _rewardLabel(rw);
@@ -336,7 +385,6 @@ async function _loadRewardsHistory(preloadedAllActive) {
         + (myAmt > 0 ? '<div style="font-size:13px;font-weight:800;color:#16a34a;flex-shrink:0">₹' + myAmt + '</div>' : '<div style="font-size:10px;font-weight:800;color:#16a34a;background:#dcfce7;padding:3px 9px;border-radius:99px;flex-shrink:0">USED</div>')
         + '</div>';
     });
-
     expired.forEach(function(rw) {
       const title = rw.title || rw.label || rw.name || 'Special Offer';
       const offLabel = _rewardLabel(rw);
@@ -349,14 +397,11 @@ async function _loadRewardsHistory(preloadedAllActive) {
         + '<div style="font-size:10px;font-weight:800;color:#999;background:#eee;padding:3px 9px;border-radius:99px;flex-shrink:0">EXPIRED</div>'
         + '</div>';
     });
-
-    if (expired.length > 0) {
-      html += '<div style="text-align:center;font-size:11.5px;color:#e5221a;font-weight:700;margin-top:6px">😬 Agli baar jaldi karo — offers limited time ke liye hote hain!</div>';
-    }
+    if (expired.length > 0) html += '<div style="text-align:center;font-size:11.5px;color:#e5221a;font-weight:700;margin-top:6px">😬 Agli baar jaldi karo — offers limited time ke liye hote hain!</div>';
+    html += '</div>';
 
     if (histListEl) histListEl.innerHTML = html;
 
-    // ── Toggle expand/collapse ──
     const toggleBtn = document.getElementById('rewards-history-toggle');
     const arrowEl   = document.getElementById('rewards-history-arrow');
     if (toggleBtn && !toggleBtn._bound) {
@@ -367,12 +412,105 @@ async function _loadRewardsHistory(preloadedAllActive) {
         if (arrowEl) arrowEl.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
       });
     }
-
   } catch (e) {
     console.warn('[rewards history] fetch failed:', e.message);
   }
 }
 
+// ============================================================
+//  MENU — items, best sellers, search + scroll
+// ============================================================
+async function _loadMenu() {
+  if (!FIREBASE_READY) return;
+  try {
+    const snap = await getDocs(collFn(db, 'menu'));
+    const items = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(i => i.showOnApp !== false);
+
+    const secEl  = document.getElementById('menu-section');
+    const listEl = document.getElementById('menu-list');
+    if (!secEl || !listEl) return;
+
+    if (!items.length) { secEl.style.display = 'none'; return; }
+    secEl.style.display = 'block';
+
+    // Best sellers first, then rest
+    items.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
+
+    let searchHtml = '<input type="text" id="menu-search" placeholder="🔍 Item search karo..." '
+      + 'style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #efefef;border-radius:12px;font-family:var(--font);font-size:13px;margin-bottom:10px;outline:none" '
+      + 'oninput="window._filterMenu(this.value)"/>';
+
+    let cardsHtml = '<div id="menu-scroll" style="max-height:380px;overflow-y:auto;padding-right:2px">';
+    items.forEach(function(it) {
+      const isOut = it.available === false;
+      const hasDisc = (parseFloat(it.discount) || 0) > 0;
+      const price = parseFloat(it.price) || 0;
+      const finalPrice = hasDisc ? Math.round(price * (1 - (parseFloat(it.discount)/100))) : price;
+      const hasVariants = it.variants && it.variants.length > 0;
+
+      let priceHtml;
+      if (hasVariants) {
+        const prices = it.variants.map(v => parseFloat(v.price) || 0);
+        const minP = Math.min(...prices), maxP = Math.max(...prices);
+        priceHtml = '<span style="font-weight:800;color:#1a1a1a;font-size:15px">₹' + minP + (minP !== maxP ? '–' + maxP : '') + '</span>';
+      } else {
+        priceHtml = hasDisc
+          ? '<span style="text-decoration:line-through;color:#bbb;font-size:13px;margin-right:6px">₹' + price + '</span><span style="font-weight:800;color:#e5221a;font-size:16px">₹' + finalPrice + '</span>'
+          : '<span style="font-weight:800;color:#1a1a1a;font-size:16px">₹' + price + '</span>';
+      }
+
+      let badges = '';
+      if (it.isBestSeller) badges += '<span style="font-size:10px;font-weight:800;color:#92400e;background:#fef9c3;padding:2px 8px;border-radius:99px;margin-right:5px">⭐ Best Seller</span>';
+      if (hasDisc && !hasVariants) badges += '<span style="font-size:10px;font-weight:800;color:#e5221a;background:#fff0f0;padding:2px 8px;border-radius:99px;margin-right:5px">' + it.discount + '% OFF</span>';
+      if (it.prepTime) badges += '<span style="font-size:10px;font-weight:700;color:#888;background:#f5f5f5;padding:2px 8px;border-radius:99px">⏱️ ' + it.prepTime + ' min</span>';
+
+      let variantChips = '';
+      if (hasVariants) {
+        variantChips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'
+          + it.variants.map(v =>
+              '<span style="font-size:11px;font-weight:700;color:#555;background:#f5f5f5;border:1px solid #e8e8e8;padding:3px 10px;border-radius:99px">'
+              + v.name + ' · ₹' + v.price + '</span>'
+            ).join('')
+          + '</div>';
+      }
+
+      cardsHtml += '<div class="menu-card" data-search="' + (it.name||'').toLowerCase() + '" '
+        + 'style="background:#fff;border:1.5px solid #efefef;border-radius:14px;padding:13px 16px;margin-bottom:9px;display:flex;align-items:' + (hasVariants ? 'flex-start' : 'center') + ';gap:12px' + (isOut ? ';opacity:.5' : '') + '">'
+        + '<div style="font-size:26px;flex-shrink:0">' + (it.emoji || '🌯') + '</div>'
+        + '<div style="flex:1">'
+        + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
+        + '<span style="width:8px;height:8px;border-radius:50%;background:' + (it.type === 'veg' ? '#22c55e' : '#e5221a') + ';flex-shrink:0"></span>'
+        + '<span style="font-size:14px;font-weight:700;color:#1a1a1a">' + (it.name||'') + '</span>'
+        + '</div>'
+        + (badges ? '<div style="margin-bottom:4px">' + badges + '</div>' : '')
+        + (isOut ? '<div style="font-size:11px;color:#e5221a;font-weight:700">Abhi available nahi hai</div>' : '')
+        + variantChips
+        + '</div>'
+        + '<div style="flex-shrink:0;text-align:right">' + priceHtml + '</div>'
+        + '</div>';
+    });
+    cardsHtml += '</div>';
+
+    listEl.innerHTML = searchHtml + cardsHtml;
+  } catch (e) {
+    console.warn('[menu] fetch failed:', e.message);
+  }
+}
+
+window._filterMenu = function(q) {
+  q = (q || '').toLowerCase();
+  document.querySelectorAll('.menu-card').forEach(function(card) {
+    const match = card.getAttribute('data-search').indexOf(q) !== -1;
+    card.style.display = match ? 'flex' : 'none';
+  });
+};
+
+// ============================================================
+//  HOOK 3 — renderAll()
+//  Single source of truth — user + settings → poora UI
+// ============================================================
 function renderAll(u, s) {
   renderHero(u, s);
   renderStats(u);
@@ -382,15 +520,26 @@ function renderAll(u, s) {
   renderReferral(u, s);
 }
 
+// ── 3a. Hero / Greeting ──────────────────────────────────────
 function renderHero(u, s) {
   const hr    = new Date().getHours();
   const greet = hr < 12 ? 'Good Morning ☀️' : hr < 17 ? 'Good Afternoon 🌤️' : 'Good Evening 🌙';
   setText('dash-greeting', greet);
   setText('dash-name',     u.name);
   setText('dash-pts',      u.points || 0);
+
+  // First-time vs returning hero style
   const heroEl = document.getElementById('dash-hero');
-  if (heroEl) heroEl.className = u.dashVisited ? 'dash-hero returning' : 'dash-hero first-time';
-  if (!u.dashVisited) { show('first-banner', true); _markDashVisited(u.mobile); }
+  if (heroEl) {
+    heroEl.className = u.dashVisited ? 'dash-hero returning' : 'dash-hero first-time';
+  }
+
+  // First visit celebration — mark once
+  if (!u.dashVisited) {
+    show('first-banner', true);
+    // Mark in Firestore + LS (fire and forget)
+    _markDashVisited(u.mobile);
+  }
 }
 
 async function _markDashVisited(mobile) {
@@ -398,13 +547,15 @@ async function _markDashVisited(mobile) {
     try {
       const { updateDoc } = await import('../shared/firebase-config.js');
       await updateDoc(docFn(db, COLLECTIONS.users, mobile), { dashVisited: true });
-    } catch (e) {}
+    } catch (e) { /* non-critical */ }
   }
+  // LS
   const users = JSON.parse(localStorage.getItem(LS.users) || '[]');
   const idx   = users.findIndex(u => u.mobile === mobile);
   if (idx !== -1) { users[idx].dashVisited = true; localStorage.setItem(LS.users, JSON.stringify(users)); }
 }
 
+// ── 3b. Stats strip ─────────────────────────────────────────
 function renderStats(u) {
   setText('stat-visits', u.visits    || 0);
   setText('stat-pts',    u.points    || 0);
@@ -412,116 +563,173 @@ function renderStats(u) {
   setText('stat-refs',   u.referrals || 0);
 }
 
+// ── 3c. Offer / Announcement Banner (HOOK 2 output) ─────────
+//  Priority: Admin message > Birthday > Birthday soon > Special offer
 export function renderOfferBanner(u, s) {
   const today    = new Date();
   const dob      = u.dob ? new Date(u.dob) : null;
   const isBday   = dob && dob.getDate()===today.getDate() && dob.getMonth()===today.getMonth();
   const bannerEl = document.getElementById('offer-banner');
   if (!bannerEl) return;
+
+  // Priority 1: Admin announcement (from Firestore settings)
   if (s.announcement_show && s.announcement_text) {
     bannerEl.style.display = 'flex';
-    setText('banner-icon', s.announcement_icon || '📢');
+    setText('banner-icon',  s.announcement_icon || '📢');
     setText('banner-title', s.announcement_text);
-    setText('banner-sub', s.announcement_sub || '');
+    setText('banner-sub',   s.announcement_sub  || '');
     return;
   }
+
+  // Legacy field support
   if (s.todayMessage) {
     bannerEl.style.display = 'flex';
-    setText('banner-icon', s.todayMessageIcon || '📢');
+    setText('banner-icon',  s.todayMessageIcon || '📢');
     setText('banner-title', s.todayMessage);
-    setText('banner-sub', s.todayMessageSub || '');
+    setText('banner-sub',   s.todayMessageSub || '');
     return;
   }
+
+  // Priority 2: Birthday today
   if (isBday) {
     bannerEl.style.display = 'flex';
-    setText('banner-icon', '🎂');
+    setText('banner-icon',  '🎂');
     setText('banner-title', `Happy Birthday ${u.name.split(' ')[0]}! 🎉`);
-    setText('banner-sub', 'FREE Roll ya Momos + 15% off — aaj sirf aapke liye!');
+    setText('banner-sub',   'FREE Roll ya Momos + 15% off — aaj sirf aapke liye!');
     return;
   }
+
+  // Priority 3: Birthday coming soon (7 days)
   if (dob) {
     const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
     if (next < today) next.setFullYear(today.getFullYear() + 1);
     const diff = Math.ceil((next - today) / 864e5);
     if (diff <= 7) {
       bannerEl.style.display = 'flex';
-      setText('banner-icon', '🎂');
+      setText('banner-icon',  '🎂');
       setText('banner-title', `Birthday ${diff} din mein!`);
-      setText('banner-sub', 'Kuch khaas wait kar raha hai aapke liye!');
+      setText('banner-sub',   'Kuch khaas wait kar raha hai aapke liye!');
       return;
     }
   }
+
+  // Priority 4: Win-back / special offer
   if (u.specialOffer?.active) {
     bannerEl.style.display = 'flex';
-    setText('banner-icon', '🎁');
+    setText('banner-icon',  '🎁');
     setText('banner-title', u.specialOffer.label || 'Special Offer!');
-    setText('banner-sub', `Sirf ${u.specialOffer.validDays || 7} din ke liye valid`);
+    setText('banner-sub',   `Sirf ${u.specialOffer.validDays || 7} din ke liye valid`);
     return;
   }
+
+  // No banner
   bannerEl.style.display = 'none';
 }
 
+// ── 3d. Coupon ───────────────────────────────────────────────
 export function renderCoupon(u, s) {
   const code    = generateCouponCode(u.mobile, 'welcome');
   const discPct = s.defaultWelcomeDisc || DEFAULTS.welcomeDiscPct || 10;
-  setText('coupon-code', code);
-  setText('coupon-pct', discPct + '% OFF');
+  setText('coupon-code',  code);
+  setText('coupon-pct',   discPct + '% OFF');
   setText('coupon-label', 'Welcome Discount');
+
   const copyBtn = document.getElementById('copy-btn');
   if (copyBtn) {
     copyBtn.onclick = () => {
       navigator.clipboard.writeText(code).catch(() => {});
       copyBtn.textContent = '✓ Copied!';
       copyBtn.classList.add('ok');
-      setTimeout(() => { copyBtn.textContent = '📋 Copy'; copyBtn.classList.remove('ok'); }, 2200);
+      setTimeout(() => {
+        copyBtn.textContent = '📋 Copy';
+        copyBtn.classList.remove('ok');
+      }, 2200);
     };
   }
 }
 
+// ── 3e. Visit Streak / Progress bar ─────────────────────────
 export function renderStreak(u, s) {
-  const goal   = s.defaultVisitThreshold || DEFAULTS.visitGoal || 5;
-  const rew    = s.defaultVisitReward    || DEFAULTS.visitReward || 'FREE Roll ya Momos';
+  const mob    = u.mobile;
+  const goal   = s.visitRewards?.[mob]?.threshold
+               || s.defaultVisitThreshold
+               || DEFAULTS.visitGoal
+               || 5;
+  const rew    = s.visitRewards?.[mob]?.reward
+               || s.defaultVisitReward
+               || DEFAULTS.visitReward
+               || 'FREE Roll ya Momos';
   const visits = u.visits || 0;
   const cycle  = visits % goal;
+
   setText('streak-title', rew + ' Reward');
   setText('streak-badge', cycle + '/' + goal);
   setText('streak-sub',   goal + ' visits pe ' + rew + '!');
+
+  // ── Progress bar (if present) ─────────────────────────
   const bar = document.getElementById('streak-bar');
-  if (bar) bar.style.width = Math.round((cycle / goal) * 100) + '%';
+  if (bar) {
+    const pct = Math.round((cycle / goal) * 100);
+    bar.style.width = pct + '%';
+  }
+
+  // ── Dots ──────────────────────────────────────────────
   const dotsEl = document.getElementById('streak-dots');
   if (dotsEl) {
     dotsEl.innerHTML = '';
     for (let i = 0; i < goal; i++) {
       const d = document.createElement('div');
-      d.className = 'dot' + (i < cycle ? ' done' : '') + (i === goal-1 ? ' goal' : '');
+      d.className = 'dot'
+        + (i < cycle     ? ' done' : '')
+        + (i === goal-1  ? ' goal' : '');
       dotsEl.appendChild(d);
     }
   }
+
+  // ── Message ───────────────────────────────────────────
   const msgEl = document.getElementById('streak-msg');
   if (msgEl) {
-    if (cycle === 0 && visits > 0) { msgEl.textContent = '🎉 Aaj FREE item eligible! Counter pe batao.'; msgEl.className = 's-msg win'; }
-    else { msgEl.textContent = (goal - cycle) + ' aur visits chahiye — ' + rew + ' milega!'; msgEl.className = 's-msg'; }
+    if (cycle === 0 && visits > 0) {
+      msgEl.textContent = '🎉 Aaj FREE item eligible! Counter pe batao.';
+      msgEl.className   = 's-msg win';
+    } else {
+      const left = goal - cycle;
+      msgEl.textContent = left + ' aur visit' + (left===1?'':'s') + ' chahiye — ' + rew + ' milega!';
+      msgEl.className   = 's-msg';
+    }
   }
 }
 
+// ── 3f. Referral Card ────────────────────────────────────────
 export function renderReferral(u, s) {
-  const steps = s.defaultRefSteps || DEFAULTS.refSteps || [50, 120, 200];
+  const mob   = u.mobile;
+  const steps = s.referralRewards?.[mob]?.steps
+              || s.defaultRefSteps
+              || DEFAULTS.refSteps
+              || [50, 120, 200];
   const count = u.referrals || 0;
+
   setText('ref-sub', `Har dost = ${steps[0]} pts! ${steps.length} dost = ${steps[steps.length-1]} pts!`);
+
   const tiersEl = document.getElementById('ref-tiers');
   if (tiersEl) {
-    tiersEl.innerHTML = steps.map((pts, i) =>
-      `<div class="ref-tier ${count > i ? 'done' : ''}"><div class="rt-num">${i+1}</div><div class="rt-pts">${pts} pts</div></div>`
-    ).join('');
+    tiersEl.innerHTML = steps.map((pts, i) => `
+      <div class="ref-tier ${count > i ? 'done' : ''}">
+        <div class="rt-num">${i + 1}</div>
+        <div class="rt-pts">${pts} pts</div>
+      </div>`).join('');
   }
+
+  // Share button
   const shareBtn = document.getElementById('ref-share-btn');
   if (shareBtn) {
     shareBtn.onclick = () => {
-      const base = window.location.href.replace('dashboard.html', '');
-      const link = `${base}index.html?ref=${u.mobile}`;
+      const base = window.location.href.replace('dashboard.html','');
+      const link = `${base}index.html?ref=${mob}`;
       const txt  = `Yaar! ${SHOP.name} mein amazing rolls milte hain 🌯 Mere referral se join karo — discount milega! ${link}`;
-      if (navigator.share) navigator.share({ title: SHOP.name, text: txt, url: link });
-      else {
+      if (navigator.share) {
+        navigator.share({ title: SHOP.name, text: txt, url: link });
+      } else {
         navigator.clipboard.writeText(txt).catch(() => {});
         const orig = shareBtn.textContent;
         shareBtn.textContent = '✓ Link Copied!';
@@ -531,47 +739,48 @@ export function renderReferral(u, s) {
   }
 }
 
+// ============================================================
+//  LOGOUT — cleanup listeners before leaving
+// ============================================================
 export function handleLogout() {
+  // Stop Firestore listeners
   if (unsubUser) { unsubUser(); unsubUser = null; }
   if (unsubSett) { unsubSett(); unsubSett = null; }
+
+  // Stop fallback polls
   _polls.forEach(clearInterval);
   _polls = [];
+
   logoutUser();
   window.location.href = 'index.html';
 }
 
-function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
-function show(id, v) { const el = document.getElementById(id); if (el) el.style.display = v ? 'flex' : 'none'; }
+// ============================================================
+//  PRIVATE HELPERS
+// ============================================================
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function show(id, visible) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = visible ? 'flex' : 'none';
+}
+
 function _syncToLS(user) {
   const users = JSON.parse(localStorage.getItem(LS.users) || '[]');
   const idx   = users.findIndex(u => u.mobile === user.mobile);
   if (idx !== -1) users[idx] = user; else users.push(user);
   localStorage.setItem(LS.users, JSON.stringify(users));
 }
+
 function _flashElement(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.style.transition = 'color .15s';
-  el.style.color = '#22c55e';
+  el.style.color      = '#22c55e';
   setTimeout(() => { el.style.color = ''; }, 600);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

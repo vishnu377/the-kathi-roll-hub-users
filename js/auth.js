@@ -1,4 +1,3 @@
-
 // ============================================================
 //  customer/js/auth.js  —  Firebase-FIRST version
 //  registerUser → Firestore setDoc
