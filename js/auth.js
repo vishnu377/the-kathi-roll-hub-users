@@ -51,10 +51,28 @@ export async function registerUser(userData) {
 
   // ── 2. Build full user object ───────────────────────────
   const joinSource = sessionStorage.getItem('krh_src') || 'direct';
+  let welcomePts = 200;
+  if (FIREBASE_READY) {
+    try {
+      const cfgSnap = await getDocFn(docFn(db, COLLECTIONS.settings, 'config'));
+      if (cfgSnap.exists()) {
+        const cfgData = cfgSnap.data();
+        welcomePts = cfgData.defaultWelcomePts || 200;
+        localStorage.setItem(LS.settings, JSON.stringify(cfgData)); // cache for later
+      }
+    } catch (e) {
+      console.warn('[registerUser] settings fetch failed, using default:', e.message);
+    }
+  }
+  if (welcomePts === 200) {
+    // Fallback to any locally cached settings if Firestore fetch above didn't run/find data
+    const s = JSON.parse(localStorage.getItem(LS.settings) || '{}');
+    welcomePts = s.defaultWelcomePts || welcomePts;
+  }
   const user = {
     ...userData,
     mobile,
-    points:      200,
+    points:      welcomePts,
     visits:      0,
     saved:       0,
     referrals:   0,
@@ -285,3 +303,10 @@ function _syncUserToLS(user) {
   else users.push(user);
   _lsSetUsers(users);
 }
+
+
+
+
+
+
+

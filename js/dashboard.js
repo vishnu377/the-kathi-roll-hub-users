@@ -133,10 +133,9 @@ function _fallbackUserPoll(mobile) {
 // ============================================================
 function _startSettingsListener() {
   if (FIREBASE_READY) {
-    // COLLECTIONS.settings = "rollhub_config"
-    // Document ID = "settings" (ya "config" — constants.js se)
+    // Admin saves to settings/config document (see admin/js/settings.js)
     unsubSett = onSnapshotFn(
-      docFn(db, COLLECTIONS.settings, 'settings'),
+      docFn(db, COLLECTIONS.settings, 'config'),
       (snap) => {
         if (!snap.exists()) return;
         const fresh = snap.data();
@@ -226,6 +225,8 @@ async function _loadActiveRewards() {
 
     const mobile0 = user ? user.mobile : null;
     const rewards = allRewards.filter(function(rw) {
+      // Personal targeting: if targetMobile is set, only show to that exact customer
+      if (rw.targetMobile && rw.targetMobile !== mobile0) return false;
       if (rw.singleUse && rw.usedBy && mobile0 && rw.usedBy.indexOf(mobile0) !== -1) return false;
       if (rw.maxUses && (rw.usageCount || 0) >= rw.maxUses) return false;
       return true;
@@ -279,9 +280,12 @@ async function _loadActiveRewards() {
         const maxUses = rw.maxUses ? (rw.usageCount||0) + '/' + rw.maxUses + ' used' : '';
         const code    = rw.code || '';
 
-        var topBar = '<div style="background:linear-gradient(90deg,#fff8cc,#fff3b0);padding:14px 16px;border-bottom:1.5px dashed #ffe58f;display:flex;align-items:center;gap:10px">'
-          + '<div style="font-size:26px">🎁</div>'
+        const isPersonal = !!rw.targetMobile;
+
+        var topBar = '<div style="background:' + (isPersonal ? 'linear-gradient(90deg,#f3e8ff,#ede9fe)' : 'linear-gradient(90deg,#fff8cc,#fff3b0)') + ';padding:14px 16px;border-bottom:1.5px dashed ' + (isPersonal ? '#c4b5fd' : '#ffe58f') + ';display:flex;align-items:center;gap:10px">'
+          + '<div style="font-size:26px">' + (isPersonal ? '💜' : '🎁') + '</div>'
           + '<div style="flex:1">'
+          + (isPersonal ? '<div style="font-size:10px;font-weight:800;color:#7c3aed;background:#ede9fe;display:inline-block;padding:2px 9px;border-radius:99px;margin-bottom:4px">🎁 Exclusive Offer for You!</div><br/>' : '')
           + '<div style="font-size:15px;font-weight:800;color:#1a1a1a">' + title + '</div>';
         if (rw.description) topBar += '<div style="font-size:12px;color:#998a4a;font-weight:600;margin-top:2px;line-height:1.4">' + rw.description + '</div>';
         topBar += '<div style="font-size:13px;font-weight:700;color:#e5221a;margin-top:4px">' + offLabel + ' — Har order pe discount!</div>';
@@ -306,7 +310,7 @@ async function _loadActiveRewards() {
           + '<div style="font-size:12px;font-weight:800;color:#e5221a">' + offLabel + '</div></div>';
 
         cardsHtml += '<div class="rw-card" data-search="' + (title + ' ' + (rw.description||'')).toLowerCase() + '" '
-          + 'style="background:#fff;border:1.5px solid #ffe58f;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)">'
+          + 'style="background:#fff;border:1.5px solid ' + (isPersonal ? '#c4b5fd' : '#ffe58f') + ';border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)">'
           + topBar + codeSection + footer + '</div>';
       });
       cardsHtml += '</div>';
@@ -590,13 +594,17 @@ export function renderOfferBanner(u, s) {
     return;
   }
 
-  // Priority 2: Birthday today
+  // Priority 2: Birthday today (unless already redeemed today)
   if (isBday) {
-    bannerEl.style.display = 'flex';
-    setText('banner-icon',  '🎂');
-    setText('banner-title', `Happy Birthday ${u.name.split(' ')[0]}! 🎉`);
-    setText('banner-sub',   'FREE Roll ya Momos + 15% off — aaj sirf aapke liye!');
-    return;
+    const usedDate = u.couponUsed_birthday ? new Date(u.couponUsed_birthday) : null;
+    const usedToday = usedDate && usedDate.toDateString() === today.toDateString();
+    if (!usedToday) {
+      bannerEl.style.display = 'flex';
+      setText('banner-icon',  '🎂');
+      setText('banner-title', `Happy Birthday ${u.name.split(' ')[0]}! 🎉`);
+      setText('banner-sub',   'FREE Roll ya Momos + 15% off — aaj sirf aapke liye!');
+      return;
+    }
   }
 
   // Priority 3: Birthday coming soon (7 days)
@@ -628,6 +636,13 @@ export function renderOfferBanner(u, s) {
 
 // ── 3d. Coupon ───────────────────────────────────────────────
 export function renderCoupon(u, s) {
+  const wrapEl = document.getElementById('coupon-wrap-sec');
+  if (u.couponUsed_welcome) {
+    if (wrapEl) wrapEl.style.display = 'none';
+    return;
+  }
+  if (wrapEl) wrapEl.style.display = 'block';
+
   const code    = generateCouponCode(u.mobile, 'welcome');
   const discPct = s.defaultWelcomeDisc || DEFAULTS.welcomeDiscPct || 10;
   setText('coupon-code',  code);
@@ -782,5 +797,12 @@ function _flashElement(id) {
   el.style.color      = '#22c55e';
   setTimeout(() => { el.style.color = ''; }, 600);
 }
+
+
+
+
+
+
+
 
 
