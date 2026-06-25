@@ -1,3 +1,4 @@
+
 // ============================================================
 //  customer/js/auth.js  —  Firebase-FIRST version
 //  registerUser → Firestore setDoc
@@ -161,6 +162,120 @@ export async function loginUser(mobile, dob) {
 }
 
 // ============================================================
+//  NEW: PIN + OTP based auth (added alongside old DOB login —
+//  old loginUser() above is left untouched for safe rollback)
+// ============================================================
+
+// ── Send OTP via backend (Vercel function → Fast2SMS) ────────
+export async function sendOtpToMobile(mobile) {
+  try {
+    const res = await fetch('/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    return { success: false, message: 'Network error: ' + e.message };
+  }
+}
+
+// ── Verify OTP via backend ────────────────────────────────────
+export async function verifyOtpCode(mobile, otp) {
+  try {
+    const res = await fetch('/api/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile, otp }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    return { success: false, message: 'Network error: ' + e.message };
+  }
+}
+
+// ── Check if a customer already has a PIN set ─────────────────
+export async function hasPinSet(mobile) {
+  await _ready;
+  if (FIREBASE_READY) {
+    try {
+      const snap = await getDocFn(docFn(db, COLLECTIONS.users, mobile));
+      if (snap.exists()) {
+        return !!snap.data().pin;
+      }
+      return false;
+    } catch (e) {
+      console.warn('[hasPinSet] Firestore failed:', e.message);
+    }
+  }
+  const users = _lsGetUsers();
+  const user = users.find(u => u.mobile === mobile);
+  return !!(user && user.pin);
+}
+
+// ── Set/update a customer's 4-digit PIN ───────────────────────
+export async function setUserPin(mobile, pin) {
+  await _ready;
+  if (!/^\d{4}$/.test(pin)) {
+    return { success: false, message: 'PIN exactly 4 digit ka number hona chahiye' };
+  }
+
+  if (FIREBASE_READY) {
+    try {
+      await updateDocFn(docFn(db, COLLECTIONS.users, mobile), { pin });
+      const users = _lsGetUsers();
+      const idx = users.findIndex(u => u.mobile === mobile);
+      if (idx !== -1) { users[idx].pin = pin; _lsSetUsers(users); }
+      return { success: true };
+    } catch (e) {
+      return { success: false, message: 'Save failed: ' + e.message };
+    }
+  }
+
+  const users = _lsGetUsers();
+  const idx = users.findIndex(u => u.mobile === mobile);
+  if (idx !== -1) { users[idx].pin = pin; _lsSetUsers(users); return { success: true }; }
+  return { success: false, message: 'User not found' };
+}
+
+// ── Login with mobile + PIN (no OTP cost for returning users) ─
+export async function loginWithPin(mobile, pin) {
+  await _ready;
+
+  if (FIREBASE_READY) {
+    try {
+      const snap = await getDocFn(docFn(db, COLLECTIONS.users, mobile));
+      if (!snap.exists()) {
+        return { success: false, message: '❌ Yeh number registered nahi hai.' };
+      }
+      const fbUser = snap.data();
+      if (!fbUser.pin) {
+        return { success: false, message: 'PIN set nahi hai. Pehle set karein.', needsPinSetup: true };
+      }
+      if (fbUser.pin !== pin) {
+        return { success: false, message: '❌ Galat PIN. Dobara try karein.' };
+      }
+      _syncUserToLS(fbUser);
+      localStorage.setItem(LS.current, mobile);
+      return { success: true, user: fbUser };
+    } catch (e) {
+      console.warn('[loginWithPin] Firestore failed, trying LS:', e.message);
+    }
+  }
+
+  const users = _lsGetUsers();
+  const user = users.find(u => u.mobile === mobile);
+  if (!user) return { success: false, message: '❌ Yeh number registered nahi hai.' };
+  if (!user.pin) return { success: false, message: 'PIN set nahi hai. Pehle set karein.', needsPinSetup: true };
+  if (user.pin !== pin) return { success: false, message: '❌ Galat PIN.' };
+
+  localStorage.setItem(LS.current, mobile);
+  return { success: true, user };
+}
+
+// ============================================================
 //  userExists(mobile)
 //  Firestore mein document exist karta hai check karo
 // ============================================================
@@ -303,10 +418,6 @@ function _syncUserToLS(user) {
   else users.push(user);
   _lsSetUsers(users);
 }
-
-
-
-
 
 
 

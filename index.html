@@ -13,7 +13,6 @@
   <link rel="stylesheet" href="css/customer.css" />
 
   <style>
-    /* ── Page-specific layout ── */
     body {
       display: flex;
       flex-direction: column;
@@ -33,19 +32,16 @@
       align-items: center;
     }
 
-    /* ── Logo block ── */
     .logo-wrap {
       text-align: center;
       line-height: 1;
       margin-bottom: 10px;
     }
 
-    /* ── Offer text ── */
     .offer-line       { text-align: center; margin-bottom: 22px; }
     .offer-line .t1   { font-size: 13.5px; color: var(--txt2); margin-bottom: 6px; }
     .offer-line .t2   { font-size: 14.5px; font-weight: 800; color: var(--yellow); }
 
-    /* ── Member login card ── */
     .login-card {
       width: 100%;
       background: #111111;
@@ -74,17 +70,16 @@
       gap: 8px;
     }
 
-    /* DOB step */
-    .dob-step {
+    /* Step containers — shared pattern for PIN/OTP/PIN-setup steps */
+    .auth-step {
       display: none;
       flex-direction: column;
       gap: 10px;
       margin-top: 12px;
     }
+    .auth-step.show { display: flex; }
 
-    .dob-step.show { display: flex; }
-
-    .dob-lbl {
+    .step-lbl {
       font-size: 11px;
       font-weight: 800;
       color: #444;
@@ -92,27 +87,35 @@
       letter-spacing: 0.08em;
     }
 
-    /* Date dual input */
-    .date-wrap               { position: relative; }
-    .date-wrap .inp          { padding-right: 44px; }
-    .date-wrap input[type=date] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      z-index: 2;
-      width: 100%;
-    }
-    .cal-icon {
-      position: absolute;
-      right: 14px; top: 50%;
-      transform: translateY(-50%);
-      font-size: 17px;
-      pointer-events: none;
-      z-index: 1;
+    /* PIN input — large, centered digit boxes feel */
+    .pin-inp {
+      font-size: 22px;
+      text-align: center;
+      letter-spacing: 10px;
+      font-weight: 800;
     }
 
-    /* Error */
+    .link-btn {
+      background: none;
+      border: none;
+      color: var(--yellow);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 4px 0;
+      text-align: center;
+      text-decoration: underline;
+    }
+
+    .resend-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      color: var(--txt3);
+      margin-top: 2px;
+    }
+
     .err-inline {
       font-size: 12.5px;
       font-weight: 700;
@@ -124,7 +127,17 @@
       margin-top: 8px;
     }
 
-    /* Divider */
+    .ok-inline {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--green);
+      background: #051a0a;
+      border-radius: 8px;
+      padding: 9px 12px;
+      display: none;
+      margin-top: 8px;
+    }
+
     .divider-wrap {
       width: 100%;
       display: flex;
@@ -188,47 +201,92 @@
 
   <!-- ── MEMBER LOGIN CARD ── -->
   <div class="login-card">
-    <h3>👋 Apna Dashboard Kholo</h3>
-    <p>Mobile number + DOB — bas itna kaafi hai</p>
+    <h3 id="card-title">👋 Apna Dashboard Kholo</h3>
+    <p id="card-sub">Mobile number daalo, baaki hum sambhal lenge</p>
 
     <!-- Step 1: Mobile -->
-    <div class="inp-row">
-      <input
-        class="inp"
-        type="tel"
-        id="mob-inp"
-        maxlength="10"
-        placeholder="Mobile number"
-        inputmode="numeric"
-        onkeydown="if(event.key==='Enter') goNext()"
-      />
-      <button class="btn btn-white" onclick="goNext()">Aage →</button>
-    </div>
-
-    <!-- Step 2: DOB -->
-    <div class="dob-step" id="dob-step">
-      <span class="dob-lbl">Date of Birth — verification ke liye</span>
-
-      <div class="date-wrap">
+    <div class="auth-step show" id="step-mobile">
+      <div class="inp-row">
         <input
           class="inp"
-          type="text"
-          id="dob-txt"
-          placeholder="15/08/1995"
+          type="tel"
+          id="mob-inp"
           maxlength="10"
+          placeholder="Mobile number"
           inputmode="numeric"
-          oninput="onDobType()"
+          onkeydown="if(event.key==='Enter') goNext()"
         />
-        <input type="date" id="dob-hidden" onchange="onDobPick()" />
-        <span class="cal-icon">📅</span>
+        <button class="btn btn-white" id="mob-next-btn" onclick="goNext()">Aage →</button>
       </div>
+    </div>
 
-      <button class="btn btn-white" style="width:100%;padding:14px;font-size:15px" onclick="doLogin()">
+    <!-- Step 2A: Enter PIN (returning customer, no OTP cost) -->
+    <div class="auth-step" id="step-pin">
+      <span class="step-lbl">Apna 4-Digit PIN Dalo</span>
+      <input
+        class="inp pin-inp"
+        type="password"
+        id="pin-inp"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="••••"
+        onkeydown="if(event.key==='Enter') doPinLogin()"
+      />
+      <button class="btn btn-white" style="width:100%;padding:14px;font-size:15px" onclick="doPinLogin()">
         Dashboard Kholo 🎯
+      </button>
+      <button class="link-btn" onclick="goForgotPin()">PIN bhool gaye?</button>
+    </div>
+
+    <!-- Step 2B: Enter OTP (new customer, or forgot-PIN flow) -->
+    <div class="auth-step" id="step-otp">
+      <span class="step-lbl" id="otp-lbl">OTP Dalo — SMS pe bheja gaya hai</span>
+      <input
+        class="inp pin-inp"
+        type="text"
+        id="otp-inp"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="••••"
+        onkeydown="if(event.key==='Enter') doOtpVerify()"
+      />
+      <button class="btn btn-white" style="width:100%;padding:14px;font-size:15px" onclick="doOtpVerify()">
+        Verify Karo ✓
+      </button>
+      <div class="resend-row">
+        <span id="resend-timer-txt"></span>
+        <button class="link-btn" id="resend-btn" onclick="doResendOtp()" style="display:none">OTP dobara bhejo</button>
+      </div>
+    </div>
+
+    <!-- Step 2C: Set/Reset PIN (after OTP verified) -->
+    <div class="auth-step" id="step-setpin">
+      <span class="step-lbl">Naya 4-Digit PIN Banao</span>
+      <input
+        class="inp pin-inp"
+        type="password"
+        id="setpin-inp"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="••••"
+      />
+      <span class="step-lbl" style="margin-top:4px">PIN Dobara Likho</span>
+      <input
+        class="inp pin-inp"
+        type="password"
+        id="setpin-confirm-inp"
+        maxlength="4"
+        inputmode="numeric"
+        placeholder="••••"
+        onkeydown="if(event.key==='Enter') doSetPin()"
+      />
+      <button class="btn btn-white" style="width:100%;padding:14px;font-size:15px" onclick="doSetPin()">
+        PIN Save Karo ✓
       </button>
     </div>
 
     <div class="err-inline" id="err-msg"></div>
+    <div class="ok-inline" id="ok-msg"></div>
   </div>
 
   <!-- ── POWERED ── -->
@@ -241,6 +299,10 @@
 <script type="module">
   // ── Imports ──────────────────────────────────────────────
   import { LS } from '../shared/constants.js';
+  import {
+    userExists, hasPinSet, sendOtpToMobile, verifyOtpCode,
+    setUserPin, loginWithPin
+  } from './js/auth.js';
 
   // ── Auto-redirect if already logged in ───────────────────
   const cur = localStorage.getItem(LS.current);
@@ -255,95 +317,213 @@
   const ref = new URLSearchParams(location.search).get('ref');
   if (ref) sessionStorage.setItem('krh_ref', ref);
 
-  // ── QR source tracking (e.g. ?src=qr from counter/table QR code) ──
+  // ── QR source tracking ────────────────────────────────────
   const src = new URLSearchParams(location.search).get('src');
   if (src) sessionStorage.setItem('krh_src', src);
 
-  // ── STEP 1: Mobile → show DOB ────────────────────────────
-  window.goNext = function () {
-    const mob   = document.getElementById('mob-inp').value.trim();
-    const errEl = document.getElementById('err-msg');
-    errEl.style.display = 'none';
+  // ── State ──────────────────────────────────────────────────
+  let currentMobile = '';
+  let isForgotPinFlow = false;
+  let resendTimerInterval = null;
 
-    if (mob.length !== 10 || isNaN(mob)) {
-      showErr('Sahi 10-digit mobile number dalein.'); return;
-    }
+  // ── Step visibility helper ───────────────────────────────
+  function showStep(stepId) {
+    document.querySelectorAll('.auth-step').forEach(el => el.classList.remove('show'));
+    document.getElementById(stepId).classList.add('show');
+    hideMsgs();
+  }
 
-    const users = JSON.parse(localStorage.getItem(LS.users) || '[]');
-    if (!users.find(u => u.mobile === mob)) {
-      showErr('Yeh number registered nahi hai. Pehle join karein.');
-      return;
-    }
+  function hideMsgs() {
+    document.getElementById('err-msg').style.display = 'none';
+    document.getElementById('ok-msg').style.display = 'none';
+  }
 
-    document.getElementById('dob-step').classList.add('show');
-    document.getElementById('dob-txt').focus();
-  };
-
-  // ── DOB: Type (DD/MM/YYYY auto-format) ───────────────────
-  window.onDobType = function () {
-    let v = document.getElementById('dob-txt').value.replace(/\D/g, '');
-    if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
-    if (v.length > 5) v = v.slice(0, 5) + '/' + v.slice(5, 9);
-    document.getElementById('dob-txt').value = v;
-
-    const parts = v.split('/');
-    if (parts.length === 3 && parts[2].length === 4) {
-      const iso = `${parts[2]}-${parts[1]}-${parts[0]}`;
-      const d   = new Date(iso);
-      if (!isNaN(d)) {
-        document.getElementById('dob-hidden').value = iso;
-        document.getElementById('dob-txt').classList.add('ok');
-        document.getElementById('dob-txt').classList.remove('err');
-      }
-    } else {
-      document.getElementById('dob-txt').classList.remove('ok', 'err');
-      document.getElementById('dob-hidden').value = '';
-    }
-  };
-
-  // ── DOB: Calendar pick ───────────────────────────────────
-  window.onDobPick = function () {
-    const v = document.getElementById('dob-hidden').value;
-    if (!v) return;
-    const [y, m, d] = v.split('-');
-    document.getElementById('dob-txt').value = `${d}/${m}/${y}`;
-    document.getElementById('dob-txt').classList.add('ok');
-  };
-
-  // ── STEP 2: Login ────────────────────────────────────────
-  window.doLogin = function () {
-    const mob = document.getElementById('mob-inp').value.trim();
-    const dob = document.getElementById('dob-hidden').value;
-    const errEl = document.getElementById('err-msg');
-    errEl.style.display = 'none';
-
-    if (!dob) { showErr('Date of Birth zaroor dalein.'); return; }
-
-    const users = JSON.parse(localStorage.getItem(LS.users) || '[]');
-    const user  = users.find(u => u.mobile === mob && u.dob === dob);
-
-    if (user) {
-      localStorage.setItem(LS.current, mob);
-      window.location.href = 'dashboard.html';
-    } else {
-      showErr('❌ Details match nahi hui. Sahi DOB dalein ya pehle register karein.');
-    }
-  };
-
-  // ── Helper ───────────────────────────────────────────────
   function showErr(msg) {
+    hideMsgs();
     const el = document.getElementById('err-msg');
     el.textContent = msg;
     el.style.display = 'block';
   }
 
-  // Enter key on DOB field
-  document.getElementById('dob-txt').addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.doLogin();
-  });
+  function showOk(msg) {
+    hideMsgs();
+    const el = document.getElementById('ok-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  // ── STEP 1: Mobile entered → check registration + PIN status ──
+  window.goNext = async function () {
+    const mob = document.getElementById('mob-inp').value.trim();
+    hideMsgs();
+
+    if (mob.length !== 10 || isNaN(mob)) {
+      showErr('Sahi 10-digit mobile number dalein.');
+      return;
+    }
+
+    const btn = document.getElementById('mob-next-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳...';
+
+    const exists = await userExists(mob);
+    if (!exists) {
+      btn.disabled = false;
+      btn.textContent = 'Aage →';
+      showErr('Yeh number registered nahi hai. Pehle "Join" karein.');
+      return;
+    }
+
+    currentMobile = mob;
+    isForgotPinFlow = false;
+
+    const pinSet = await hasPinSet(mob);
+    btn.disabled = false;
+    btn.textContent = 'Aage →';
+
+    if (pinSet) {
+      // Returning customer — ask for PIN, zero SMS cost
+      showStep('step-pin');
+      document.getElementById('card-title').textContent = '🔐 Apna PIN Dalo';
+      document.getElementById('card-sub').textContent = `${mob} ke liye PIN verify karo`;
+      setTimeout(() => document.getElementById('pin-inp').focus(), 100);
+    } else {
+      // No PIN yet — first-time PIN setup needs OTP verification
+      await sendOtpAndShowStep();
+    }
+  };
+
+  // ── Send OTP and show OTP-entry step ─────────────────────
+  async function sendOtpAndShowStep() {
+    showOk('OTP bheja ja raha hai...');
+    const res = await sendOtpToMobile(currentMobile);
+    if (!res.success) {
+      showErr(res.message || 'OTP bhejne mein dikkat hui. Dobara try karein.');
+      return;
+    }
+    showStep('step-otp');
+    document.getElementById('card-title').textContent = '📲 OTP Verify Karo';
+    document.getElementById('card-sub').textContent = `${currentMobile} pe OTP bheja gaya hai`;
+    document.getElementById('otp-inp').value = '';
+    setTimeout(() => document.getElementById('otp-inp').focus(), 100);
+    startResendTimer();
+  }
+
+  // ── Resend OTP cooldown timer (30 seconds) ───────────────
+  function startResendTimer() {
+    let secondsLeft = 30;
+    const timerTxt = document.getElementById('resend-timer-txt');
+    const resendBtn = document.getElementById('resend-btn');
+    resendBtn.style.display = 'none';
+
+    if (resendTimerInterval) clearInterval(resendTimerInterval);
+    timerTxt.textContent = `Dobara bhejne ke liye ${secondsLeft}s wait karo`;
+
+    resendTimerInterval = setInterval(() => {
+      secondsLeft--;
+      if (secondsLeft <= 0) {
+        clearInterval(resendTimerInterval);
+        timerTxt.textContent = '';
+        resendBtn.style.display = 'block';
+      } else {
+        timerTxt.textContent = `Dobara bhejne ke liye ${secondsLeft}s wait karo`;
+      }
+    }, 1000);
+  }
+
+  window.doResendOtp = async function () {
+    await sendOtpAndShowStep();
+  };
+
+  // ── STEP 2A: PIN login (returning customer) ──────────────
+  window.doPinLogin = async function () {
+    const pin = document.getElementById('pin-inp').value.trim();
+    hideMsgs();
+
+    if (pin.length !== 4 || isNaN(pin)) {
+      showErr('4-digit PIN dalein.');
+      return;
+    }
+
+    const res = await loginWithPin(currentMobile, pin);
+    if (res.success) {
+      window.location.href = 'dashboard.html';
+    } else if (res.needsPinSetup) {
+      // Edge case: somehow no PIN was found — fall back to OTP setup
+      await sendOtpAndShowStep();
+    } else {
+      showErr(res.message || '❌ Galat PIN.');
+      document.getElementById('pin-inp').value = '';
+    }
+  };
+
+  // ── Forgot PIN → trigger OTP-based reset flow ────────────
+  window.goForgotPin = async function () {
+    isForgotPinFlow = true;
+    await sendOtpAndShowStep();
+  };
+
+  // ── STEP 2B: OTP verify ───────────────────────────────────
+  window.doOtpVerify = async function () {
+    const otp = document.getElementById('otp-inp').value.trim();
+    hideMsgs();
+
+    if (otp.length !== 4 || isNaN(otp)) {
+      showErr('4-digit OTP dalein.');
+      return;
+    }
+
+    const res = await verifyOtpCode(currentMobile, otp);
+    if (!res.success) {
+      showErr(res.message || '❌ Galat ya expired OTP.');
+      return;
+    }
+
+    if (resendTimerInterval) clearInterval(resendTimerInterval);
+
+    // OTP correct → move to PIN setup (works for both new-PIN and forgot-PIN cases)
+    showStep('step-setpin');
+    document.getElementById('card-title').textContent = isForgotPinFlow ? '🔄 Naya PIN Banao' : '🔐 PIN Set Karo';
+    document.getElementById('card-sub').textContent = 'Agli baar isi PIN se login hoga';
+    document.getElementById('setpin-inp').value = '';
+    document.getElementById('setpin-confirm-inp').value = '';
+    setTimeout(() => document.getElementById('setpin-inp').focus(), 100);
+  };
+
+  // ── STEP 2C: Set PIN ───────────────────────────────────────
+  window.doSetPin = async function () {
+    const pin = document.getElementById('setpin-inp').value.trim();
+    const confirmPin = document.getElementById('setpin-confirm-inp').value.trim();
+    hideMsgs();
+
+    if (pin.length !== 4 || isNaN(pin)) {
+      showErr('PIN exactly 4-digit number hona chahiye.');
+      return;
+    }
+    if (pin !== confirmPin) {
+      showErr('Dono PIN match nahi ho rahe. Dobara likhein.');
+      return;
+    }
+
+    const res = await setUserPin(currentMobile, pin);
+    if (res.success) {
+      localStorage.setItem(LS.current, currentMobile);
+      window.location.href = 'dashboard.html';
+    } else {
+      showErr(res.message || 'PIN save nahi hua. Dobara try karein.');
+    }
+  };
 </script>
 
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 

@@ -1,3 +1,38 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -359,7 +394,21 @@
 
   <div class="field">
     <label>Mobile Number <span class="req">*</span></label>
-    <input class="inp-light" type="tel" id="f-mob" maxlength="10" placeholder="9876543210" inputmode="numeric"/>
+    <div style="display:flex;gap:8px">
+      <input class="inp-light" type="tel" id="f-mob" maxlength="10" placeholder="9876543210" inputmode="numeric" style="flex:1" oninput="onMobChange()"/>
+      <button type="button" class="btn-add" id="verify-mob-btn" onclick="sendRegOtp()" style="flex-shrink:0">Verify</button>
+    </div>
+    <p class="hint" id="mob-verify-status" style="display:none"></p>
+  </div>
+
+  <!-- OTP entry (hidden until "Verify" clicked) -->
+  <div class="field" id="otp-field" style="display:none">
+    <label>OTP Dalo <span class="req">*</span></label>
+    <div style="display:flex;gap:8px">
+      <input class="inp-light" type="text" id="f-otp" maxlength="4" placeholder="••••" inputmode="numeric" style="flex:1;text-align:center;letter-spacing:8px;font-weight:800;font-size:18px"/>
+      <button type="button" class="btn-add" onclick="verifyRegOtp()" style="flex-shrink:0">Confirm</button>
+    </div>
+    <p class="hint" id="otp-resend-hint"></p>
   </div>
 
   <div class="field">
@@ -433,6 +482,24 @@
     <button type="button" class="occ-btn" data-occ="Party"         onclick="togOcc(this)">🎉 Party</button>
   </div>
 
+  <!-- ── SET PIN (for future logins, no OTP needed next time) ── -->
+  <div class="sec-lbl" style="margin-top:24px">🔐 Apna PIN Banao</div>
+  <div class="field">
+    <label>4-Digit PIN <span class="req">*</span></label>
+    <div style="position:relative">
+      <input class="inp-light" type="password" id="f-pin" maxlength="4" placeholder="••••" inputmode="numeric" style="text-align:center;letter-spacing:8px;font-weight:800;font-size:18px;padding-right:46px"/>
+      <button type="button" onclick="togglePinVisibility('f-pin', this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px">👁️</button>
+    </div>
+    <p class="hint">Agli baar isi PIN se login hoga — OTP ki zarurat nahi</p>
+  </div>
+  <div class="field">
+    <label>PIN Dobara Likho <span class="req">*</span></label>
+    <div style="position:relative">
+      <input class="inp-light" type="password" id="f-pin-confirm" maxlength="4" placeholder="••••" inputmode="numeric" style="text-align:center;letter-spacing:8px;font-weight:800;font-size:18px;padding-right:46px"/>
+      <button type="button" onclick="togglePinVisibility('f-pin-confirm', this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px">👁️</button>
+    </div>
+  </div>
+
   <div class="powered" style="margin-top:30px">
     Powered by VishTech Software Services
   </div>
@@ -447,7 +514,7 @@
 </div>
 
 <script type="module">
-  import { registerUser } from './js/auth.js';
+  import { registerUser, sendOtpToMobile, verifyOtpCode, setUserPin } from './js/auth.js';
   import { LS }           from '../shared/constants.js';
 
   // ── If already logged in → redirect ──────────────────────
@@ -459,6 +526,9 @@
 
   // ── State ─────────────────────────────────────────────────
   let selItems = [], custItems = [], selOcc = [];
+  let mobileVerified = false;
+  let verifiedMobile = '';
+  let resendTimerInterval = null;
 
   // ── Date helpers (global so onclick works) ────────────────
   window.dobType = function(txtId, hidId) {
@@ -535,6 +605,96 @@
     else selOcc = selOcc.filter(o => o !== occ);
   };
 
+  // ── Toggle PIN field show/hide ─────────────────────────────
+  window.togglePinVisibility = function(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      inp.type = 'password';
+      btn.textContent = '👁️';
+    }
+  };
+
+  // ── Mobile field changed → reset verification status ───────
+  window.onMobChange = function() {
+    const mob = document.getElementById('f-mob').value.trim();
+    if (mob !== verifiedMobile) {
+      mobileVerified = false;
+      document.getElementById('otp-field').style.display = 'none';
+      document.getElementById('mob-verify-status').style.display = 'none';
+      const btn = document.getElementById('verify-mob-btn');
+      btn.textContent = 'Verify';
+      btn.disabled = false;
+    }
+  };
+
+  // ── Send OTP for registration ───────────────────────────────
+  window.sendRegOtp = async function() {
+    const mob = document.getElementById('f-mob').value.trim();
+    if (mob.length !== 10 || isNaN(mob)) { showErr('Sahi 10-digit mobile number dalein.'); return; }
+
+    const btn = document.getElementById('verify-mob-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳...';
+
+    const res = await sendOtpToMobile(mob);
+    btn.disabled = false;
+
+    if (!res.success) {
+      btn.textContent = 'Verify';
+      showErr(res.message || 'OTP bhejne mein dikkat hui. Dobara try karein.');
+      return;
+    }
+
+    btn.textContent = 'Bheja gaya ✓';
+    document.getElementById('otp-field').style.display = 'block';
+    document.getElementById('f-otp').focus();
+    startRegResendTimer(mob);
+  };
+
+  function startRegResendTimer(mob) {
+    let secondsLeft = 30;
+    const hintEl = document.getElementById('otp-resend-hint');
+    if (resendTimerInterval) clearInterval(resendTimerInterval);
+
+    hintEl.innerHTML = `Dobara bhejne ke liye ${secondsLeft}s wait karo`;
+    resendTimerInterval = setInterval(() => {
+      secondsLeft--;
+      if (secondsLeft <= 0) {
+        clearInterval(resendTimerInterval);
+        hintEl.innerHTML = `OTP nahi mila? <button type="button" class="link-btn-inline" onclick="sendRegOtp()" style="background:none;border:none;color:var(--red);font-weight:800;text-decoration:underline;cursor:pointer;font-size:11.5px">Dobara bhejo</button>`;
+      } else {
+        hintEl.textContent = `Dobara bhejne ke liye ${secondsLeft}s wait karo`;
+      }
+    }, 1000);
+  }
+
+  // ── Verify OTP for registration ─────────────────────────────
+  window.verifyRegOtp = async function() {
+    const mob = document.getElementById('f-mob').value.trim();
+    const otp = document.getElementById('f-otp').value.trim();
+    if (otp.length !== 4 || isNaN(otp)) { showErr('4-digit OTP dalein.'); return; }
+
+    const res = await verifyOtpCode(mob, otp);
+    if (!res.success) {
+      showErr(res.message || '❌ Galat ya expired OTP.');
+      return;
+    }
+
+    if (resendTimerInterval) clearInterval(resendTimerInterval);
+    mobileVerified = true;
+    verifiedMobile = mob;
+
+    const statusEl = document.getElementById('mob-verify-status');
+    statusEl.textContent = '✅ Mobile verified';
+    statusEl.style.color = 'var(--green)';
+    statusEl.style.display = 'block';
+    document.getElementById('otp-field').style.display = 'none';
+    document.getElementById('verify-mob-btn').textContent = '✓ Verified';
+  };
+
   // ── SUBMIT ────────────────────────────────────────────────
   window.handleRegister = async function() {
     const errEl = document.getElementById('err-box');
@@ -544,11 +704,16 @@
     const name = document.getElementById('f-name').value.trim();
     const mob  = document.getElementById('f-mob').value.trim();
     const dob  = document.getElementById('f-dob').value;
+    const pin  = document.getElementById('f-pin').value.trim();
+    const pinConfirm = document.getElementById('f-pin-confirm').value.trim();
 
     // Validation
     if (!name) { showErr('Naam zaroor dalein.'); return; }
     if (mob.length !== 10 || isNaN(mob)) { showErr('Sahi 10-digit mobile number dalein.'); return; }
-    if (!dob)  { showErr('Date of Birth zaroor dalein — login ke liye chahiye.'); return; }
+    if (!mobileVerified || verifiedMobile !== mob) { showErr('Mobile number "Verify" karein OTP se pehle.'); return; }
+    if (!dob)  { showErr('Date of Birth zaroor dalein — birthday offers ke liye chahiye.'); return; }
+    if (pin.length !== 4 || isNaN(pin)) { showErr('4-digit PIN banayein.'); return; }
+    if (pin !== pinConfirm) { showErr('Dono PIN match nahi ho rahe. Dobara likhein.'); return; }
 
     // Build user object
     const userData = {
@@ -577,6 +742,11 @@
       const result = await registerUser(userData);
 
       if (result.success) {
+        const pinRes = await setUserPin(mob, pin);
+        if (!pinRes.success) {
+          console.warn('[handleRegister] PIN set failed:', pinRes.message);
+          // Registration already succeeded — don't block the user, they can set PIN via Forgot-PIN later
+        }
         sessionStorage.removeItem('krh_ref');
         window.location.href = 'success.html';
       } else {
@@ -601,3 +771,10 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
