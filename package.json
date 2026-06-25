@@ -1,5 +1,6 @@
 {
-  "name": "kathi-roll-hub-customer",
+  "name": "kathi-roll-hub-users",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "type": "module"
 }
