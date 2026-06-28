@@ -405,7 +405,7 @@
   <div class="field" id="otp-field" style="display:none">
     <label>OTP Dalo <span class="req">*</span></label>
     <div style="display:flex;gap:8px">
-      <input class="inp-light" type="text" id="f-otp" maxlength="4" placeholder="••••" inputmode="numeric" style="flex:1;text-align:center;letter-spacing:8px;font-weight:800;font-size:18px"/>
+      <input class="inp-light" type="text" id="f-otp" maxlength="6" placeholder="••••" inputmode="numeric" style="flex:1;text-align:center;letter-spacing:8px;font-weight:800;font-size:18px"/>
       <button type="button" class="btn-add" onclick="verifyRegOtp()" style="flex-shrink:0">Confirm</button>
     </div>
     <p class="hint" id="otp-resend-hint"></p>
@@ -675,7 +675,7 @@
   window.verifyRegOtp = async function() {
     const mob = document.getElementById('f-mob').value.trim();
     const otp = document.getElementById('f-otp').value.trim();
-    if (otp.length !== 4 || isNaN(otp)) { showErr('4-digit OTP dalein.'); return; }
+    if (otp.length !== 6 || isNaN(otp)) { showErr('4-digit OTP dalein.'); return; }
 
     const res = await verifyOtpCode(mob, otp);
     if (!res.success) {

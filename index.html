@@ -245,7 +245,7 @@
         class="inp pin-inp"
         type="text"
         id="otp-inp"
-        maxlength="4"
+        maxlength="6"
         inputmode="numeric"
         placeholder="••••"
         onkeydown="if(event.key==='Enter') doOtpVerify()"
@@ -468,7 +468,7 @@
     const otp = document.getElementById('otp-inp').value.trim();
     hideMsgs();
 
-    if (otp.length !== 4 || isNaN(otp)) {
+    if (otp.length !== 6 || isNaN(otp)) {
       showErr('4-digit OTP dalein.');
       return;
     }
