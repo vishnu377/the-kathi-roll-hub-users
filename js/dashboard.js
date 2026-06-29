@@ -41,6 +41,13 @@ let unsubUser = null;   // Firestore unsubscribe fn
 let unsubSett = null;   // Firestore settings unsubscribe
 let _polls    = [];     // setInterval handles (fallback only)
 
+// Menu category-tabs state
+let _menuItemsCache  = [];
+let _menuActiveCat   = 'All';
+
+// Offers cache (simple scroll-list, no pagination)
+let _rewardsCache = [];
+
 // ============================================================
 //  initDashboard()
 //  DOMContentLoaded pe call karo
@@ -82,21 +89,17 @@ export async function initDashboard() {
 // ============================================================
 function _startUserListener(mobile) {
   if (FIREBASE_READY) {
-    // ── Firebase onSnapshot ─────────────────────────────────
     unsubUser = onSnapshotFn(
       docFn(db, COLLECTIONS.users, mobile),
       (snap) => {
         if (!snap.exists()) return;
         const fresh = snap.data();
 
-        // Sync to LS cache
         _syncToLS(fresh);
 
-        // Detect actual changes before re-render
         if (JSON.stringify(fresh) !== JSON.stringify(user)) {
           user = fresh;
           renderAll(user, settings);
-          // Subtle flash on points change
           _flashElement('stat-pts');
         }
       },
@@ -129,23 +132,19 @@ function _fallbackUserPoll(mobile) {
 
 // ============================================================
 //  HOOK 2 — Admin Settings / Announcement Listener
-//  Admin settings change → banner/offers turant update
 // ============================================================
 function _startSettingsListener() {
   if (FIREBASE_READY) {
-    // Admin saves to settings/config document (see admin/js/settings.js)
     unsubSett = onSnapshotFn(
       docFn(db, COLLECTIONS.settings, 'config'),
       (snap) => {
         if (!snap.exists()) return;
         const fresh = snap.data();
 
-        // Sync to LS
         localStorage.setItem(LS.settings, JSON.stringify(fresh));
 
         if (JSON.stringify(fresh) !== JSON.stringify(settings)) {
           settings = fresh;
-          // Partial re-render — sirf offer-related UI
           renderOfferBanner(user, settings);
           renderStreak(user, settings);
           renderReferral(user, settings);
@@ -213,7 +212,7 @@ function _startRewardsPoll() {
 }
 
 // ============================================================
-//  ACTIVE REWARDS from admin
+//  ACTIVE REWARDS from admin — Top 3 + "Show All" pattern
 // ============================================================
 async function _loadActiveRewards() {
   if (!FIREBASE_READY) return;
@@ -260,63 +259,9 @@ async function _loadActiveRewards() {
       if (subEl) subEl.textContent = sub || 'Counter pe batao!';
     }
 
-    // Show ALL rewards in scrollable section with search
-    const secEl  = document.getElementById('rewards-section');
-    const listEl = document.getElementById('rewards-list');
-    if (secEl && listEl) {
-      secEl.style.display = 'block';
-
-      let searchHtml = '<input type="text" id="rewards-search" placeholder="🔍 Offer search karo..." '
-        + 'style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #efefef;border-radius:12px;font-family:var(--font);font-size:13px;margin-bottom:10px;outline:none" '
-        + 'oninput="window._filterRewards(this.value)"/>';
-
-      let cardsHtml = '<div id="rewards-scroll" style="max-height:340px;overflow-y:auto;padding-right:2px">';
-      rewards.forEach(function(rw) {
-        const offLabel = _rewardLabel(rw);
-        const title   = rw.title || rw.label || rw.name || 'Special Offer';
-        const expiry  = rw.expiryDate
-          ? 'Valid till: ' + new Date(rw.expiryDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
-          : 'No expiry — hamesha valid';
-        const maxUses = rw.maxUses ? (rw.usageCount||0) + '/' + rw.maxUses + ' used' : '';
-        const code    = rw.code || '';
-
-        const isPersonal = !!rw.targetMobile;
-
-        var topBar = '<div style="background:' + (isPersonal ? 'linear-gradient(90deg,#f3e8ff,#ede9fe)' : 'linear-gradient(90deg,#fff8cc,#fff3b0)') + ';padding:14px 16px;border-bottom:1.5px dashed ' + (isPersonal ? '#c4b5fd' : '#ffe58f') + ';display:flex;align-items:center;gap:10px">'
-          + '<div style="font-size:26px">' + (isPersonal ? '💜' : '🎁') + '</div>'
-          + '<div style="flex:1">'
-          + (isPersonal ? '<div style="font-size:10px;font-weight:800;color:#7c3aed;background:#ede9fe;display:inline-block;padding:2px 9px;border-radius:99px;margin-bottom:4px">🎁 Exclusive Offer for You!</div><br/>' : '')
-          + '<div style="font-size:15px;font-weight:800;color:#1a1a1a">' + title + '</div>';
-        if (rw.description) topBar += '<div style="font-size:12px;color:#998a4a;font-weight:600;margin-top:2px;line-height:1.4">' + rw.description + '</div>';
-        topBar += '<div style="font-size:13px;font-weight:700;color:#e5221a;margin-top:4px">' + offLabel + ' — Har order pe discount!</div>';
-        topBar += '</div>';
-        if (maxUses) topBar += '<div style="font-size:11px;font-weight:700;color:#aaa;flex-shrink:0">' + maxUses + '</div>';
-        topBar += '</div>';
-
-        var codeSection = '';
-        if (code) {
-          codeSection = '<div style="padding:12px 16px;background:#fff">'
-            + '<div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Coupon Code</div>'
-            + '<div style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border:1.5px dashed #e0e0e0;border-radius:10px;padding:10px 14px">'
-            + '<div style="font-family:monospace;font-size:18px;font-weight:800;letter-spacing:3px;color:#1a1a1a;flex:1">' + code + '</div>'
-            + '<button class="rw-copy-btn" data-code="' + code + '" style="background:#ffd600;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;color:#1a1a1a;white-space:nowrap">📋 Copy</button>'
-            + '</div>'
-            + '<div style="font-size:11px;color:#bbb;font-weight:600;margin-top:8px">👆 Counter pe yeh code dikhao — discount turant milega!</div>'
-            + '</div>';
-        }
-
-        var footer = '<div style="padding:8px 16px;background:#fffdf0;border-top:1px solid #fff3b0;display:flex;justify-content:space-between;align-items:center">'
-          + '<div style="font-size:11px;color:#aaa;font-weight:600">🕐 ' + expiry + '</div>'
-          + '<div style="font-size:12px;font-weight:800;color:#e5221a">' + offLabel + '</div></div>';
-
-        cardsHtml += '<div class="rw-card" data-search="' + (title + ' ' + (rw.description||'')).toLowerCase() + '" '
-          + 'style="background:#fff;border:1.5px solid ' + (isPersonal ? '#c4b5fd' : '#ffe58f') + ';border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)">'
-          + topBar + codeSection + footer + '</div>';
-      });
-      cardsHtml += '</div>';
-
-      listEl.innerHTML = searchHtml + cardsHtml;
-    }
+    // Cache full list, render scroll-list
+    _rewardsCache = rewards;
+    _renderRewardsList();
 
     const mobile = user ? user.mobile : 'guest';
     const track  = JSON.parse(localStorage.getItem('krh_user_rewards') || '{}');
@@ -329,13 +274,107 @@ async function _loadActiveRewards() {
   }
 }
 
+// ── Build a single reward-card's HTML ──────────────────────
+function _buildRewardCard(rw, idx) {
+  const offLabel = _rewardLabel(rw);
+  const title   = rw.title || rw.label || rw.name || 'Special Offer';
+  const expiry  = rw.expiryDate
+    ? 'Valid till: ' + new Date(rw.expiryDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
+    : 'No expiry — hamesha valid';
+  const maxUses = rw.maxUses ? (rw.usageCount||0) + '/' + rw.maxUses + ' used' : '';
+  const code    = rw.code || '';
+  const isPersonal = !!rw.targetMobile;
+  const accentColor = isPersonal ? '#c4b5fd' : '#ffe58f';
+  const rowId = 'rw-row-' + idx;
+
+  // ── Collapsed header — always visible, ~50px, tap to expand ──
+  var header = '<button type="button" class="rw-header" data-rowid="' + rowId + '" '
+    + 'style="width:100%;background:#fff;border:1.5px solid ' + accentColor + ';border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--font);text-align:left;touch-action:manipulation">'
+    + '<div style="font-size:20px;flex-shrink:0">' + (isPersonal ? '💜' : '🎁') + '</div>'
+    + '<div style="flex:1;min-width:0">'
+    + '<div style="font-size:13.5px;font-weight:800;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + (isPersonal ? ' <span style="font-size:9px;font-weight:800;color:#7c3aed;background:#ede9fe;padding:1px 7px;border-radius:99px;margin-left:4px">FOR YOU</span>' : '') + '</div>'
+    + '</div>'
+    + '<div style="font-size:12.5px;font-weight:800;color:#e5221a;flex-shrink:0">' + offLabel + '</div>'
+    + '<div class="rw-arrow" style="font-size:11px;color:#bbb;flex-shrink:0;transition:transform .2s">▼</div>'
+    + '</div>';
+
+  // ── Expanded detail — hidden by default, shown when header is tapped ──
+  var detailInner = '';
+  if (rw.description) detailInner += '<div style="font-size:12px;color:#998a4a;font-weight:600;margin-bottom:8px;line-height:1.4">' + rw.description + '</div>';
+
+  if (code) {
+    detailInner += '<div style="margin-bottom:10px">'
+      + '<div style="font-size:10.5px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Coupon Code</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border:1.5px dashed #e0e0e0;border-radius:10px;padding:9px 12px">'
+      + '<div style="font-family:monospace;font-size:16px;font-weight:800;letter-spacing:2.5px;color:#1a1a1a;flex:1">' + code + '</div>'
+      + '<button class="rw-copy-btn" data-code="' + code + '" style="background:#ffd600;border:none;border-radius:8px;padding:6px 12px;font-weight:800;font-size:11.5px;cursor:pointer;color:#1a1a1a;white-space:nowrap">📋 Copy</button>'
+      + '</div>'
+      + '<div style="font-size:10.5px;color:#bbb;font-weight:600;margin-top:6px">👆 Counter pe yeh code dikhao — discount turant milega!</div>'
+      + '</div>';
+  }
+
+  detailInner += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">'
+    + '<span style="color:#aaa;font-weight:600">🕐 ' + expiry + '</span>'
+    + (maxUses ? '<span style="color:#aaa;font-weight:700">' + maxUses + '</span>' : '')
+    + '</div>';
+
+  var detail = '<div class="rw-detail" id="' + rowId + '" style="display:none;background:#fffdf8;border:1.5px solid ' + accentColor + ';border-top:none;border-radius:0 0 14px 14px;padding:12px 14px;margin-top:-8px;padding-top:16px">'
+    + detailInner + '</div>';
+
+  return '<div class="rw-item" data-search="' + (title + ' ' + (rw.description||'')).toLowerCase() + '" style="margin-bottom:8px">'
+    + header + detail + '</div>';
+}
+
+// ── Render rewards list — compact accordion, search across all ──
+function _renderRewardsList() {
+  const secEl  = document.getElementById('rewards-section');
+  const listEl = document.getElementById('rewards-list');
+  if (!secEl || !listEl) return;
+
+  secEl.style.display = 'block';
+
+  let searchHtml = '<input type="text" id="rewards-search" placeholder="🔍 Offer search karo..." '
+    + 'style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #efefef;border-radius:12px;font-family:var(--font);font-size:13px;margin-bottom:10px;outline:none" '
+    + 'oninput="window._filterRewards(this.value)"/>';
+
+  let cardsHtml = '<div id="rewards-scroll" style="max-height:220px;overflow-y:auto;padding-right:2px">';
+  _rewardsCache.forEach(function(rw, idx) {
+    cardsHtml += _buildRewardCard(rw, idx);
+  });
+  cardsHtml += '</div>';
+
+  listEl.innerHTML = searchHtml + cardsHtml;
+
+  // Accordion toggle — only one open at a time keeps the list tidy
+  listEl.querySelectorAll('.rw-header').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const rowId = btn.getAttribute('data-rowid');
+      const detailEl = document.getElementById(rowId);
+      const arrowEl = btn.querySelector('.rw-arrow');
+      const isOpen = detailEl.style.display !== 'none';
+
+      // Close any other open item first
+      listEl.querySelectorAll('.rw-detail').forEach(function(d) {
+        if (d.id !== rowId) d.style.display = 'none';
+      });
+      listEl.querySelectorAll('.rw-arrow').forEach(function(a) {
+        if (a !== arrowEl) a.style.transform = 'rotate(0deg)';
+      });
+
+      detailEl.style.display = isOpen ? 'none' : 'block';
+      arrowEl.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+  });
+}
+
 window._filterRewards = function(q) {
   q = (q || '').toLowerCase();
-  document.querySelectorAll('.rw-card').forEach(function(card) {
+  document.querySelectorAll('.rw-item').forEach(function(card) {
     const match = card.getAttribute('data-search').indexOf(q) !== -1;
     card.style.display = match ? 'block' : 'none';
   });
 };
+
 
 // ============================================================
 //  REWARDS HISTORY — Used + Expired (builds trust + FOMO)
@@ -422,7 +461,7 @@ async function _loadRewardsHistory() {
 }
 
 // ============================================================
-//  MENU — items, best sellers, search + scroll
+//  MENU — Category Tabs + items (replaces flat scroll-list)
 // ============================================================
 async function _loadMenu() {
   if (!FIREBASE_READY) return;
@@ -433,82 +472,170 @@ async function _loadMenu() {
       .filter(i => i.showOnApp !== false);
 
     const secEl  = document.getElementById('menu-section');
-    const listEl = document.getElementById('menu-list');
-    if (!secEl || !listEl) return;
+    if (!secEl) return;
 
     if (!items.length) { secEl.style.display = 'none'; return; }
     secEl.style.display = 'block';
 
-    // Best sellers first, then rest
+    // Best sellers first within each category
     items.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
 
-    let searchHtml = '<input type="text" id="menu-search" placeholder="🔍 Item search karo..." '
-      + 'style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #efefef;border-radius:12px;font-family:var(--font);font-size:13px;margin-bottom:10px;outline:none" '
-      + 'oninput="window._filterMenu(this.value)"/>';
+    _menuItemsCache = items;
+    _menuActiveCat  = 'All';
 
-    let cardsHtml = '<div id="menu-scroll" style="max-height:380px;overflow-y:auto;padding-right:2px">';
-    items.forEach(function(it) {
-      const isOut = it.available === false;
-      const hasDisc = (parseFloat(it.discount) || 0) > 0;
-      const price = parseFloat(it.price) || 0;
-      const finalPrice = hasDisc ? Math.round(price * (1 - (parseFloat(it.discount)/100))) : price;
-      const hasVariants = it.variants && it.variants.length > 0;
-
-      let priceHtml;
-      if (hasVariants) {
-        const prices = it.variants.map(v => parseFloat(v.price) || 0);
-        const minP = Math.min(...prices), maxP = Math.max(...prices);
-        priceHtml = '<span style="font-weight:800;color:#1a1a1a;font-size:15px">₹' + minP + (minP !== maxP ? '–' + maxP : '') + '</span>';
-      } else {
-        priceHtml = hasDisc
-          ? '<span style="text-decoration:line-through;color:#bbb;font-size:13px;margin-right:6px">₹' + price + '</span><span style="font-weight:800;color:#e5221a;font-size:16px">₹' + finalPrice + '</span>'
-          : '<span style="font-weight:800;color:#1a1a1a;font-size:16px">₹' + price + '</span>';
-      }
-
-      let badges = '';
-      if (it.isBestSeller) badges += '<span style="font-size:10px;font-weight:800;color:#92400e;background:#fef9c3;padding:2px 8px;border-radius:99px;margin-right:5px">⭐ Best Seller</span>';
-      if (hasDisc && !hasVariants) badges += '<span style="font-size:10px;font-weight:800;color:#e5221a;background:#fff0f0;padding:2px 8px;border-radius:99px;margin-right:5px">' + it.discount + '% OFF</span>';
-      if (it.prepTime) badges += '<span style="font-size:10px;font-weight:700;color:#888;background:#f5f5f5;padding:2px 8px;border-radius:99px">⏱️ ' + it.prepTime + ' min</span>';
-
-      let variantChips = '';
-      if (hasVariants) {
-        variantChips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'
-          + it.variants.map(v =>
-              '<span style="font-size:11px;font-weight:700;color:#555;background:#f5f5f5;border:1px solid #e8e8e8;padding:3px 10px;border-radius:99px">'
-              + v.name + ' · ₹' + v.price + '</span>'
-            ).join('')
-          + '</div>';
-      }
-
-      cardsHtml += '<div class="menu-card" data-search="' + (it.name||'').toLowerCase() + '" '
-        + 'style="background:#fff;border:1.5px solid #efefef;border-radius:14px;padding:13px 16px;margin-bottom:9px;display:flex;align-items:' + (hasVariants ? 'flex-start' : 'center') + ';gap:12px' + (isOut ? ';opacity:.5' : '') + '">'
-        + '<div style="font-size:26px;flex-shrink:0">' + (it.emoji || '🌯') + '</div>'
-        + '<div style="flex:1">'
-        + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
-        + '<span style="width:8px;height:8px;border-radius:50%;background:' + (it.type === 'veg' ? '#22c55e' : '#e5221a') + ';flex-shrink:0"></span>'
-        + '<span style="font-size:14px;font-weight:700;color:#1a1a1a">' + (it.name||'') + '</span>'
-        + '</div>'
-        + (badges ? '<div style="margin-bottom:4px">' + badges + '</div>' : '')
-        + (isOut ? '<div style="font-size:11px;color:#e5221a;font-weight:700">Abhi available nahi hai</div>' : '')
-        + variantChips
-        + '</div>'
-        + '<div style="flex-shrink:0;text-align:right">' + priceHtml + '</div>'
-        + '</div>';
-    });
-    cardsHtml += '</div>';
-
-    listEl.innerHTML = searchHtml + cardsHtml;
+    _renderMenuSearchBar();
+    _renderMenuCatTabs();
+    _renderMenuItems();
   } catch (e) {
     console.warn('[menu] fetch failed:', e.message);
   }
 }
 
-window._filterMenu = function(q) {
-  q = (q || '').toLowerCase();
-  document.querySelectorAll('.menu-card').forEach(function(card) {
-    const match = card.getAttribute('data-search').indexOf(q) !== -1;
-    card.style.display = match ? 'flex' : 'none';
+// ── Search bar (separate from tabs, always visible) ──────────
+function _renderMenuSearchBar() {
+  const wrap = document.getElementById('menu-search-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<input type="text" id="menu-search" placeholder="🔍 Item search karo..." '
+    + 'style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #efefef;border-radius:12px;font-family:var(--font);font-size:13px;margin-bottom:12px;outline:none" '
+    + 'oninput="window._filterMenu(this.value)"/>';
+}
+
+// ── Category tabs — built from admin-defined categories ──────
+function _renderMenuCatTabs() {
+  const tabsEl = document.getElementById('menu-cat-tabs');
+  if (!tabsEl) return;
+
+  // Collect unique categories that actually have items, preserve a sane order
+  const seen = new Set();
+  const cats = [];
+  _menuItemsCache.forEach(it => {
+    const c = it.category || 'Other';
+    if (!seen.has(c)) { seen.add(c); cats.push(c); }
   });
+
+  const allTabs = ['All', ...cats];
+
+  tabsEl.innerHTML = allTabs.map(cat => {
+    const count = cat === 'All'
+      ? _menuItemsCache.length
+      : _menuItemsCache.filter(it => (it.category || 'Other') === cat).length;
+    const isOn = cat === _menuActiveCat;
+    return '<button type="button" class="cat-tab' + (isOn ? ' on' : '') + '" data-cat="' + cat.replace(/"/g,'&quot;') + '">'
+      + cat + ' (' + count + ')'
+      + '</button>';
+  }).join('');
+
+  tabsEl.querySelectorAll('.cat-tab').forEach(btn => {
+    btn.addEventListener('click', function() {
+      _menuActiveCat = this.getAttribute('data-cat');
+      // Reset search when switching tabs, for a predictable view
+      const searchInp = document.getElementById('menu-search');
+      if (searchInp) searchInp.value = '';
+      _renderMenuCatTabs();
+      _renderMenuItems();
+    });
+  });
+}
+
+// ── Build a single menu item's card HTML ──────────────────────
+function _buildMenuCard(it) {
+  const isOut = it.available === false;
+  const hasDisc = (parseFloat(it.discount) || 0) > 0;
+  const price = parseFloat(it.price) || 0;
+  const finalPrice = hasDisc ? Math.round(price * (1 - (parseFloat(it.discount)/100))) : price;
+  const hasVariants = it.variants && it.variants.length > 0;
+
+  let priceHtml;
+  if (hasVariants) {
+    const prices = it.variants.map(v => parseFloat(v.price) || 0);
+    const minP = Math.min(...prices), maxP = Math.max(...prices);
+    priceHtml = '<span style="font-weight:800;color:#1a1a1a;font-size:15px">₹' + minP + (minP !== maxP ? '–' + maxP : '') + '</span>';
+  } else {
+    priceHtml = hasDisc
+      ? '<span style="text-decoration:line-through;color:#bbb;font-size:13px;margin-right:6px">₹' + price + '</span><span style="font-weight:800;color:#e5221a;font-size:16px">₹' + finalPrice + '</span>'
+      : '<span style="font-weight:800;color:#1a1a1a;font-size:16px">₹' + price + '</span>';
+  }
+
+  let badges = '';
+  if (it.isBestSeller) badges += '<span style="font-size:10px;font-weight:800;color:#92400e;background:#fef9c3;padding:2px 8px;border-radius:99px;margin-right:5px">⭐ Best Seller</span>';
+  if (hasDisc && !hasVariants) badges += '<span style="font-size:10px;font-weight:800;color:#e5221a;background:#fff0f0;padding:2px 8px;border-radius:99px;margin-right:5px">' + it.discount + '% OFF</span>';
+  if (it.prepTime) badges += '<span style="font-size:10px;font-weight:700;color:#888;background:#f5f5f5;padding:2px 8px;border-radius:99px">⏱️ ' + it.prepTime + ' min</span>';
+
+  let variantChips = '';
+  if (hasVariants) {
+    variantChips = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'
+      + it.variants.map(v =>
+          '<span style="font-size:11px;font-weight:700;color:#555;background:#f5f5f5;border:1px solid #e8e8e8;padding:3px 10px;border-radius:99px">'
+          + v.name + ' · ₹' + v.price + '</span>'
+        ).join('')
+      + '</div>';
+  }
+
+  return '<div class="menu-card" data-search="' + (it.name||'').toLowerCase() + '" '
+    + 'style="background:#fff;border:1.5px solid #efefef;border-radius:14px;padding:13px 16px;margin-bottom:9px;display:flex;align-items:' + (hasVariants ? 'flex-start' : 'center') + ';gap:12px' + (isOut ? ';opacity:.5' : '') + '">'
+    + '<div style="font-size:26px;flex-shrink:0">' + (it.emoji || '🌯') + '</div>'
+    + '<div style="flex:1">'
+    + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
+    + '<span style="width:8px;height:8px;border-radius:50%;background:' + (it.type === 'veg' ? '#22c55e' : '#e5221a') + ';flex-shrink:0"></span>'
+    + '<span style="font-size:14px;font-weight:700;color:#1a1a1a">' + (it.name||'') + '</span>'
+    + '</div>'
+    + (badges ? '<div style="margin-bottom:4px">' + badges + '</div>' : '')
+    + (isOut ? '<div style="font-size:11px;color:#e5221a;font-weight:700">Abhi available nahi hai</div>' : '')
+    + variantChips
+    + '</div>'
+    + '<div style="flex-shrink:0;text-align:right">' + priceHtml + '</div>'
+    + '</div>';
+}
+
+// ── Render items for the currently-active category tab ───────
+function _renderMenuItems() {
+  const listEl = document.getElementById('menu-list');
+  if (!listEl) return;
+
+  const items = _menuActiveCat === 'All'
+    ? _menuItemsCache
+    : _menuItemsCache.filter(it => (it.category || 'Other') === _menuActiveCat);
+
+  if (!items.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--txt3);font-size:13px;color:#bbb">Iss category mein abhi koi item nahi hai</div>';
+    return;
+  }
+
+  let html = '<div id="menu-scroll" style="max-height:380px;overflow-y:auto;padding-right:2px">';
+  items.forEach(function(it) {
+    html += _buildMenuCard(it);
+  });
+  html += '</div>';
+
+  listEl.innerHTML = html;
+}
+
+// ── Search works across ALL items regardless of active tab ───
+window._filterMenu = function(q) {
+  q = (q || '').toLowerCase().trim();
+
+  if (!q) {
+    // Empty search → go back to normal category view
+    _renderMenuItems();
+    return;
+  }
+
+  // While searching, search across everything (ignore category tabs)
+  const matches = _menuItemsCache.filter(it => (it.name || '').toLowerCase().includes(q));
+  const listEl = document.getElementById('menu-list');
+  if (!listEl) return;
+
+  if (!matches.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#bbb;font-size:13px">Koi item nahi mila</div>';
+    return;
+  }
+
+  let html = '<div id="menu-scroll" style="max-height:380px;overflow-y:auto;padding-right:2px">';
+  matches.forEach(function(it) {
+    html += _buildMenuCard(it);
+  });
+  html += '</div>';
+  listEl.innerHTML = html;
 };
 
 // ============================================================
@@ -532,16 +659,13 @@ function renderHero(u, s) {
   setText('dash-name',     u.name);
   setText('dash-pts',      u.points || 0);
 
-  // First-time vs returning hero style
   const heroEl = document.getElementById('dash-hero');
   if (heroEl) {
     heroEl.className = u.dashVisited ? 'dash-hero returning' : 'dash-hero first-time';
   }
 
-  // First visit celebration — mark once
   if (!u.dashVisited) {
     show('first-banner', true);
-    // Mark in Firestore + LS (fire and forget)
     _markDashVisited(u.mobile);
   }
 }
@@ -553,7 +677,6 @@ async function _markDashVisited(mobile) {
       await updateDoc(docFn(db, COLLECTIONS.users, mobile), { dashVisited: true });
     } catch (e) { /* non-critical */ }
   }
-  // LS
   const users = JSON.parse(localStorage.getItem(LS.users) || '[]');
   const idx   = users.findIndex(u => u.mobile === mobile);
   if (idx !== -1) { users[idx].dashVisited = true; localStorage.setItem(LS.users, JSON.stringify(users)); }
@@ -568,7 +691,6 @@ function renderStats(u) {
 }
 
 // ── 3c. Offer / Announcement Banner (HOOK 2 output) ─────────
-//  Priority: Admin message > Birthday > Birthday soon > Special offer
 export function renderOfferBanner(u, s) {
   const today    = new Date();
   const dob      = u.dob ? new Date(u.dob) : null;
@@ -576,7 +698,6 @@ export function renderOfferBanner(u, s) {
   const bannerEl = document.getElementById('offer-banner');
   if (!bannerEl) return;
 
-  // Priority 1: Admin announcement (from Firestore settings)
   if (s.announcement_show && s.announcement_text) {
     bannerEl.style.display = 'flex';
     setText('banner-icon',  s.announcement_icon || '📢');
@@ -585,7 +706,6 @@ export function renderOfferBanner(u, s) {
     return;
   }
 
-  // Legacy field support
   if (s.todayMessage) {
     bannerEl.style.display = 'flex';
     setText('banner-icon',  s.todayMessageIcon || '📢');
@@ -594,7 +714,6 @@ export function renderOfferBanner(u, s) {
     return;
   }
 
-  // Priority 2: Birthday today (unless already redeemed today)
   if (isBday) {
     const usedDate = u.couponUsed_birthday ? new Date(u.couponUsed_birthday) : null;
     const usedToday = usedDate && usedDate.toDateString() === today.toDateString();
@@ -607,7 +726,6 @@ export function renderOfferBanner(u, s) {
     }
   }
 
-  // Priority 3: Birthday coming soon (7 days)
   if (dob) {
     const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
     if (next < today) next.setFullYear(today.getFullYear() + 1);
@@ -621,7 +739,6 @@ export function renderOfferBanner(u, s) {
     }
   }
 
-  // Priority 4: Win-back / special offer
   if (u.specialOffer?.active) {
     bannerEl.style.display = 'flex';
     setText('banner-icon',  '🎁');
@@ -630,7 +747,6 @@ export function renderOfferBanner(u, s) {
     return;
   }
 
-  // No banner
   bannerEl.style.display = 'none';
 }
 
@@ -681,14 +797,12 @@ export function renderStreak(u, s) {
   setText('streak-badge', cycle + '/' + goal);
   setText('streak-sub',   goal + ' visits pe ' + rew + '!');
 
-  // ── Progress bar (if present) ─────────────────────────
   const bar = document.getElementById('streak-bar');
   if (bar) {
     const pct = Math.round((cycle / goal) * 100);
     bar.style.width = pct + '%';
   }
 
-  // ── Dots ──────────────────────────────────────────────
   const dotsEl = document.getElementById('streak-dots');
   if (dotsEl) {
     dotsEl.innerHTML = '';
@@ -701,7 +815,6 @@ export function renderStreak(u, s) {
     }
   }
 
-  // ── Message ───────────────────────────────────────────
   const msgEl = document.getElementById('streak-msg');
   if (msgEl) {
     if (cycle === 0 && visits > 0) {
@@ -735,7 +848,6 @@ export function renderReferral(u, s) {
       </div>`).join('');
   }
 
-  // Share button
   const shareBtn = document.getElementById('ref-share-btn');
   if (shareBtn) {
     shareBtn.onclick = () => {
@@ -758,11 +870,9 @@ export function renderReferral(u, s) {
 //  LOGOUT — cleanup listeners before leaving
 // ============================================================
 export function handleLogout() {
-  // Stop Firestore listeners
   if (unsubUser) { unsubUser(); unsubUser = null; }
   if (unsubSett) { unsubSett(); unsubSett = null; }
 
-  // Stop fallback polls
   _polls.forEach(clearInterval);
   _polls = [];
 
@@ -797,12 +907,6 @@ function _flashElement(id) {
   el.style.color      = '#22c55e';
   setTimeout(() => { el.style.color = ''; }, 600);
 }
-
-
-
-
-
-
 
 
 

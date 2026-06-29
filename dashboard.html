@@ -17,11 +17,8 @@
       position: relative; overflow: hidden;
       transition: background 0.3s;
     }
-    /* returning → black */
     .dash-hero.returning  { background: var(--black); }
-    /* first time → orange gradient */
     .dash-hero.first-time { background: linear-gradient(160deg,var(--red) 0%,var(--orange) 100%); }
-    /* default until JS loads */
     .dash-hero            { background: var(--black); }
 
     .dash-hero::before {
@@ -57,7 +54,6 @@
       margin-bottom: 14px; line-height: 1.1;
     }
 
-    /* Points pill */
     .pts-pill {
       display: inline-flex; align-items: center; gap: 8px;
       background: #111; border: 1.5px solid #222; border-radius: 99px;
@@ -70,7 +66,6 @@
     }
     .pts-lbl { font-size: 12px; color: #444; font-weight: 700; }
 
-    /* First-time celebration banner (inside hero) */
     #first-banner {
       display: none;
       background: rgba(255,255,255,0.1);
@@ -89,7 +84,6 @@
       padding: 26px 14px 40px;
     }
 
-    /* ── Stat Strip ── */
     .stats {
       display: grid; grid-template-columns: repeat(3,1fr);
       gap: 8px; margin-bottom: 18px;
@@ -105,7 +99,6 @@
     .stat .sv.r { color: var(--red); }
     .stat .sl { font-size: 10px; color: #bbb; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
 
-    /* ── Offer Banner ── */
     #offer-banner {
       display: none;
       background: #fff8cc; border: 2px solid var(--yellow);
@@ -117,7 +110,6 @@
     #offer-banner h3 { font-size: 14px; font-weight: 800; color: #1a1a1a; margin-bottom: 2px; }
     #offer-banner p  { font-size: 12px; color: #888; font-weight: 600; }
 
-    /* ── Section label (cream bg) ── */
     .sec {
       font-size: 10px; font-weight: 800; letter-spacing: .16em;
       text-transform: uppercase; color: var(--red);
@@ -126,6 +118,34 @@
     }
     .sec:first-of-type { margin-top: 0; }
     .sec::after { content:''; flex:1; height:1px; background:#ddd; }
+
+    /* ── NEW: Show-More button (used by Offers section) ── */
+    .show-more-btn {
+      width: 100%; background: #fff; border: 1.5px solid #efefef;
+      border-radius: 12px; padding: 11px; margin-top: 8px;
+      font-family: var(--font); font-size: 12.5px; font-weight: 800;
+      color: var(--red); cursor: pointer; touch-action: manipulation;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .show-more-btn:active { background: #fff5f5; }
+
+    /* ── NEW: Category Tabs (used by Menu section) ── */
+    .cat-tabs-wrap {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding-bottom: 4px; margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .cat-tabs-wrap::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      flex-shrink: 0; background: #fff; border: 1.5px solid #efefef;
+      border-radius: 99px; padding: 8px 16px;
+      font-family: var(--font); font-size: 12.5px; font-weight: 800;
+      color: #888; cursor: pointer; touch-action: manipulation;
+      transition: all .15s; white-space: nowrap;
+    }
+    .cat-tab.on {
+      background: var(--yellow); border-color: var(--yellow); color: #1a1a1a;
+    }
 
     /* ── Coupon Ticket ── */
     .coupon-wrap {
@@ -303,7 +323,6 @@
       <span class="pts-lbl">Points</span>
     </div>
 
-    <!-- First-time welcome strip -->
     <div id="first-banner">
       <div class="fb-icon">🎉</div>
       <div class="fb-text">Welcome to the Loyalty Club! ₹200 cashback add ho gaya.</div>
@@ -314,14 +333,12 @@
 <!-- ══ BODY ════════════════════════════════════════════════ -->
 <div class="body">
 
-  <!-- Stat Strip -->
   <div class="stats">
     <div class="stat"><div class="sv"   id="stat-visits">0</div><div class="sl">Visits</div></div>
     <div class="stat"><div class="sv r" id="stat-saved">₹0</div><div class="sl">Bachaya</div></div>
     <div class="stat"><div class="sv"   id="stat-refs">0</div>  <div class="sl">Referrals</div></div>
   </div>
 
-  <!-- Offer Banner (admin-driven / birthday) -->
   <div id="offer-banner">
     <div class="ob-icon" id="banner-icon">🎁</div>
     <div>
@@ -330,7 +347,7 @@
     </div>
   </div>
 
-  <!-- ACTIVE REWARDS from Admin -->
+  <!-- ACTIVE REWARDS from Admin — Top 3 + Show More -->
   <div id="rewards-section" style="display:none">
     <div class="sec">🎁 Active Offers</div>
     <div id="rewards-list"></div>
@@ -350,9 +367,11 @@
     <div id="rewards-history-list" style="display:none;margin-top:8px"></div>
   </div>
 
-  <!-- MENU — items, best sellers, discounts -->
+  <!-- MENU — Category Tabs + items -->
   <div id="menu-section" style="display:none">
     <div class="sec">🌯 Hamara Menu</div>
+    <div id="menu-search-wrap"></div>
+    <div class="cat-tabs-wrap" id="menu-cat-tabs"></div>
     <div id="menu-list"></div>
   </div>
 
@@ -439,15 +458,12 @@
 
   import { SHOP, LS } from '../shared/constants.js';
 
-  // ── Boot ──────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     initDashboard();
   });
 
-  // ── Expose logout to onclick ──────────────────────────────
   window._dashLogout = handleLogout;
 
-  // ── Feedback Sheet ───────────────────────────────────────
   let fbType = '';
 
   window.openSheet = function(type) {
@@ -466,19 +482,16 @@
     const txt = document.getElementById('sh-txt').value.trim();
     if (!txt) { document.getElementById('sh-txt').focus(); return; }
 
-    // Get current user
     const mob  = localStorage.getItem(LS.current) || '';
     const users= JSON.parse(localStorage.getItem(LS.users) || '[]');
     const user = users.find(u => u.mobile === mob);
     const name = user?.name || 'Customer';
     const wa   = SHOP.whatsapp;
 
-    // Save to LS for admin
     const fbs = JSON.parse(localStorage.getItem('krh_feedback') || '[]');
     fbs.unshift({ type:fbType, name, mobile:mob, msg:txt, time:new Date().toISOString() });
     localStorage.setItem('krh_feedback', JSON.stringify(fbs));
 
-    // Open WhatsApp
     const msg = encodeURIComponent(
       `*${fbType}* — ${SHOP.name}\n\n*Customer:* ${name} (${mob})\n*Message:* ${txt}`
     );
@@ -488,10 +501,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
