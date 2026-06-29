@@ -284,48 +284,40 @@ function _buildRewardCard(rw, idx) {
   const maxUses = rw.maxUses ? (rw.usageCount||0) + '/' + rw.maxUses + ' used' : '';
   const code    = rw.code || '';
   const isPersonal = !!rw.targetMobile;
-  const accentColor = isPersonal ? '#c4b5fd' : '#ffe58f';
-  const rowId = 'rw-row-' + idx;
 
-  // ── Collapsed header — always visible, ~50px, tap to expand ──
-  var header = '<button type="button" class="rw-header" data-rowid="' + rowId + '" '
-    + 'style="width:100%;background:#fff;border:1.5px solid ' + accentColor + ';border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--font);text-align:left;touch-action:manipulation">'
-    + '<div style="font-size:20px;flex-shrink:0">' + (isPersonal ? '💜' : '🎁') + '</div>'
-    + '<div style="flex:1;min-width:0">'
-    + '<div style="font-size:13.5px;font-weight:800;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + title + (isPersonal ? ' <span style="font-size:9px;font-weight:800;color:#7c3aed;background:#ede9fe;padding:1px 7px;border-radius:99px;margin-left:4px">FOR YOU</span>' : '') + '</div>'
-    + '</div>'
-    + '<div style="font-size:12.5px;font-weight:800;color:#e5221a;flex-shrink:0">' + offLabel + '</div>'
-    + '<div class="rw-arrow" style="font-size:11px;color:#bbb;flex-shrink:0;transition:transform .2s">▼</div>'
-    + '</div>';
+  var topBar = '<div style="background:' + (isPersonal ? 'linear-gradient(90deg,#f3e8ff,#ede9fe)' : 'linear-gradient(90deg,#fff8cc,#fff3b0)') + ';padding:14px 16px;border-bottom:1.5px dashed ' + (isPersonal ? '#c4b5fd' : '#ffe58f') + ';display:flex;align-items:center;gap:10px">'
+    + '<div style="font-size:26px">' + (isPersonal ? '💜' : '🎁') + '</div>'
+    + '<div style="flex:1">'
+    + (isPersonal ? '<div style="font-size:10px;font-weight:800;color:#7c3aed;background:#ede9fe;display:inline-block;padding:2px 9px;border-radius:99px;margin-bottom:4px">🎁 Exclusive Offer for You!</div><br/>' : '')
+    + '<div style="font-size:15px;font-weight:800;color:#1a1a1a">' + title + '</div>';
+  if (rw.description) topBar += '<div style="font-size:12px;color:#998a4a;font-weight:600;margin-top:2px;line-height:1.4">' + rw.description + '</div>';
+  topBar += '<div style="font-size:13px;font-weight:700;color:#e5221a;margin-top:4px">' + offLabel + ' — Har order pe discount!</div>';
+  topBar += '</div>';
+  if (maxUses) topBar += '<div style="font-size:11px;font-weight:700;color:#aaa;flex-shrink:0">' + maxUses + '</div>';
+  topBar += '</div>';
 
-  // ── Expanded detail — hidden by default, shown when header is tapped ──
-  var detailInner = '';
-  if (rw.description) detailInner += '<div style="font-size:12px;color:#998a4a;font-weight:600;margin-bottom:8px;line-height:1.4">' + rw.description + '</div>';
-
+  var codeSection = '';
   if (code) {
-    detailInner += '<div style="margin-bottom:10px">'
-      + '<div style="font-size:10.5px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Coupon Code</div>'
-      + '<div style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border:1.5px dashed #e0e0e0;border-radius:10px;padding:9px 12px">'
-      + '<div style="font-family:monospace;font-size:16px;font-weight:800;letter-spacing:2.5px;color:#1a1a1a;flex:1">' + code + '</div>'
-      + '<button class="rw-copy-btn" data-code="' + code + '" style="background:#ffd600;border:none;border-radius:8px;padding:6px 12px;font-weight:800;font-size:11.5px;cursor:pointer;color:#1a1a1a;white-space:nowrap">📋 Copy</button>'
+    codeSection = '<div style="padding:12px 16px;background:#fff">'
+      + '<div style="font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Coupon Code</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;background:#f8f8f8;border:1.5px dashed #e0e0e0;border-radius:10px;padding:10px 14px">'
+      + '<div style="font-family:monospace;font-size:18px;font-weight:800;letter-spacing:3px;color:#1a1a1a;flex:1">' + code + '</div>'
+      + '<button class="rw-copy-btn" data-code="' + code + '" style="background:#ffd600;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;color:#1a1a1a;white-space:nowrap">📋 Copy</button>'
       + '</div>'
-      + '<div style="font-size:10.5px;color:#bbb;font-weight:600;margin-top:6px">👆 Counter pe yeh code dikhao — discount turant milega!</div>'
+      + '<div style="font-size:11px;color:#bbb;font-weight:600;margin-top:8px">👆 Counter pe yeh code dikhao — discount turant milega!</div>'
       + '</div>';
   }
 
-  detailInner += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">'
-    + '<span style="color:#aaa;font-weight:600">🕐 ' + expiry + '</span>'
-    + (maxUses ? '<span style="color:#aaa;font-weight:700">' + maxUses + '</span>' : '')
-    + '</div>';
+  var footer = '<div style="padding:8px 16px;background:#fffdf0;border-top:1px solid #fff3b0;display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-size:11px;color:#aaa;font-weight:600">🕐 ' + expiry + '</div>'
+    + '<div style="font-size:12px;font-weight:800;color:#e5221a">' + offLabel + '</div></div>';
 
-  var detail = '<div class="rw-detail" id="' + rowId + '" style="display:none;background:#fffdf8;border:1.5px solid ' + accentColor + ';border-top:none;border-radius:0 0 14px 14px;padding:12px 14px;margin-top:-8px;padding-top:16px">'
-    + detailInner + '</div>';
-
-  return '<div class="rw-item" data-search="' + (title + ' ' + (rw.description||'')).toLowerCase() + '" style="margin-bottom:8px">'
-    + header + detail + '</div>';
+  return '<div class="rw-card" data-search="' + (title + ' ' + (rw.description||'')).toLowerCase() + '" '
+    + 'style="background:#fff;border:1.5px solid ' + (isPersonal ? '#c4b5fd' : '#ffe58f') + ';border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)">'
+    + topBar + codeSection + footer + '</div>';
 }
 
-// ── Render rewards list — compact accordion, search across all ──
+// ── Render rewards list — full cards, always visible, scrollable ──
 function _renderRewardsList() {
   const secEl  = document.getElementById('rewards-section');
   const listEl = document.getElementById('rewards-list');
@@ -337,39 +329,20 @@ function _renderRewardsList() {
     + 'style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #efefef;border-radius:12px;font-family:var(--font);font-size:13px;margin-bottom:10px;outline:none" '
     + 'oninput="window._filterRewards(this.value)"/>';
 
-  let cardsHtml = '<div id="rewards-scroll" style="max-height:220px;overflow-y:auto;padding-right:2px">';
+  let cardsHtml = '<div id="rewards-scroll" style="max-height:340px;overflow-y:auto;padding-right:2px">';
   _rewardsCache.forEach(function(rw, idx) {
     cardsHtml += _buildRewardCard(rw, idx);
   });
   cardsHtml += '</div>';
 
   listEl.innerHTML = searchHtml + cardsHtml;
-
-  // Accordion toggle — only one open at a time keeps the list tidy
-  listEl.querySelectorAll('.rw-header').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      const rowId = btn.getAttribute('data-rowid');
-      const detailEl = document.getElementById(rowId);
-      const arrowEl = btn.querySelector('.rw-arrow');
-      const isOpen = detailEl.style.display !== 'none';
-
-      // Close any other open item first
-      listEl.querySelectorAll('.rw-detail').forEach(function(d) {
-        if (d.id !== rowId) d.style.display = 'none';
-      });
-      listEl.querySelectorAll('.rw-arrow').forEach(function(a) {
-        if (a !== arrowEl) a.style.transform = 'rotate(0deg)';
-      });
-
-      detailEl.style.display = isOpen ? 'none' : 'block';
-      arrowEl.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-    });
-  });
 }
+
+
 
 window._filterRewards = function(q) {
   q = (q || '').toLowerCase();
-  document.querySelectorAll('.rw-item').forEach(function(card) {
+  document.querySelectorAll('.rw-card').forEach(function(card) {
     const match = card.getAttribute('data-search').indexOf(q) !== -1;
     card.style.display = match ? 'block' : 'none';
   });
