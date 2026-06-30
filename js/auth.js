@@ -1,4 +1,3 @@
-
 // ============================================================
 //  customer/js/auth.js  —  Firebase-FIRST version
 //  registerUser → Firestore setDoc
@@ -12,6 +11,11 @@ import { LS, POINTS, COLLECTIONS, DEFAULTS } from '../shared/constants.js';
 // ── Firebase ─────────────────────────────────────────────────
 let db, docFn, setDocFn, getDocFn, updateDocFn, FIREBASE_READY = false;
 
+// NEW: Anonymous Auth state — lets Firestore Security Rules
+// distinguish "request came from our app" vs random outside calls.
+// This is invisible to the customer — no extra screen, no extra click.
+let authFn, signInAnonymouslyFn;
+
 async function initFirebase() {
   try {
     const cfg  = await import('../shared/firebase-config.js');
@@ -21,9 +25,33 @@ async function initFirebase() {
     getDocFn    = cfg.getDoc;
     updateDocFn = cfg.updateDoc;
     FIREBASE_READY = true;
+
+    // NEW: silently sign in anonymously (best-effort — if this
+    // fails for any reason, the app still works exactly as before
+    // since we never gate any existing function on this succeeding).
+    await ensureAnonymousAuth(cfg);
   } catch (e) {
     FIREBASE_READY = false;
     console.warn('[auth.js] Firebase offline — LocalStorage fallback', e.message);
+  }
+}
+
+// NEW: best-effort, non-blocking anonymous sign-in
+async function ensureAnonymousAuth(cfg) {
+  try {
+    const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+    authFn = cfg.auth;
+    signInAnonymouslyFn = authModule.signInAnonymously;
+
+    // Only sign in if not already signed in (avoids duplicate calls
+    // on hot-reload / multiple initFirebase invocations)
+    if (authFn && !authFn.currentUser) {
+      await signInAnonymouslyFn(authFn);
+      console.log('[auth.js] Anonymous auth ready ✅');
+    }
+  } catch (e) {
+    // Non-fatal — app continues working as before even if this fails
+    console.warn('[auth.js] Anonymous auth failed (non-fatal):', e.message);
   }
 }
 
@@ -418,6 +446,4 @@ function _syncUserToLS(user) {
   else users.push(user);
   _lsSetUsers(users);
 }
-
-
 
