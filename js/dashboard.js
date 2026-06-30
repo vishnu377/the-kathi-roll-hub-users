@@ -664,6 +664,7 @@ function renderStats(u) {
 }
 
 // ── 3c. Offer / Announcement Banner (HOOK 2 output) ─────────
+//  NEW: Birthday section skips check if feature_birthdayOffer === false
 export function renderOfferBanner(u, s) {
   const today    = new Date();
   const dob      = u.dob ? new Date(u.dob) : null;
@@ -687,7 +688,10 @@ export function renderOfferBanner(u, s) {
     return;
   }
 
-  if (isBday) {
+  // NEW CHECK: skip entire birthday block if admin turned it off
+  const birthdayEnabled = s.feature_birthdayOffer !== false;
+
+  if (birthdayEnabled && isBday) {
     const usedDate = u.couponUsed_birthday ? new Date(u.couponUsed_birthday) : null;
     const usedToday = usedDate && usedDate.toDateString() === today.toDateString();
     if (!usedToday) {
@@ -699,7 +703,7 @@ export function renderOfferBanner(u, s) {
     }
   }
 
-  if (dob) {
+  if (birthdayEnabled && dob) {
     const next = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
     if (next < today) next.setFullYear(today.getFullYear() + 1);
     const diff = Math.ceil((next - today) / 864e5);
@@ -724,8 +728,16 @@ export function renderOfferBanner(u, s) {
 }
 
 // ── 3d. Coupon ───────────────────────────────────────────────
+//  NEW: Hide entire section if feature_welcomeDiscount === false
 export function renderCoupon(u, s) {
   const wrapEl = document.getElementById('coupon-wrap-sec');
+
+  // NEW CHECK: admin toggle for Welcome Discount
+  if (s.feature_welcomeDiscount === false) {
+    if (wrapEl) wrapEl.style.display = 'none';
+    return;
+  }
+
   if (u.couponUsed_welcome) {
     if (wrapEl) wrapEl.style.display = 'none';
     return;
@@ -753,7 +765,20 @@ export function renderCoupon(u, s) {
 }
 
 // ── 3e. Visit Streak / Progress bar ─────────────────────────
+//  NEW: Hide entire section if feature_visitStreak === false
 export function renderStreak(u, s) {
+  const cardEl = document.querySelector('.streak-card');
+  const secLbl = document.getElementById('streak-sec-lbl');
+
+  // NEW CHECK: admin toggle for Visit Streak
+  if (s.feature_visitStreak === false) {
+    if (cardEl) cardEl.style.display = 'none';
+    if (secLbl) secLbl.style.display = 'none';
+    return;
+  }
+  if (cardEl) cardEl.style.display = 'block';
+  if (secLbl) secLbl.style.display = 'flex';
+
   const mob    = u.mobile;
   const goal   = s.visitRewards?.[mob]?.threshold
                || s.defaultVisitThreshold
@@ -880,6 +905,8 @@ function _flashElement(id) {
   el.style.color      = '#22c55e';
   setTimeout(() => { el.style.color = ''; }, 600);
 }
+
+
 
 
 
