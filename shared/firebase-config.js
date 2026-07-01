@@ -21,14 +21,18 @@
 //  Kathi Roll Hub - Firebase Connection File
 // ============================================================
 
+
+
+
+
+
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCErNYguHO8s4m5aeyGRQvM_PWV_9IzJKs",
-  authDomain: "the-kathi-roll-hub.firebaseapp.com",
-  projectId: "the-kathi-roll-hub",
-  storageBucket: "the-kathi-roll-hub.firebasestorage.app",
-  messagingSenderId: "684649816270",
-  appId: "1:684649816270:web:73dc4606b754702f6a309f",
-  measurementId: "G-NBTTCE099E"
+  apiKey: "AIzaSyBV3V-jbrORXVrT5Ivlqnk77rCN1qQtrBc",
+  authDomain: "vishtech-demo.firebaseapp.com",
+  projectId: "vishtech-demo",
+  storageBucket: "vishtech-demo.firebasestorage.app",
+  messagingSenderId: "51380510759",
+  appId: "1:51380510759:web:cde39db065ef20cfd6ee02"
 };
 
 // ── Firebase SDK Imports ──────────────────────────────────────
