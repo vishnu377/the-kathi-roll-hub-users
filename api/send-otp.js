@@ -1,6 +1,7 @@
+
 // ============================================================
 //  api/send-otp.js  —  Vercel Serverless Function
-//  Sends an OTP via 2Factor.in (no DLT registration required).
+//  Sends an OTP via 2Factor.in using Vi DLT approved template.
 //  The API key NEVER reaches the browser — it lives only in
 //  Vercel's server environment.
 // ============================================================
@@ -32,9 +33,12 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, message: 'Server config error' });
     }
 
-    // ── 2Factor AUTOGEN: lets 2Factor generate + send the OTP ──
-    // It returns a "Session ID" we need to keep for verification.
-    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${mobile}/AUTOGEN`;
+    // ── Vi DLT Approved Template: VishtechOTP ──────────────
+    // Sender: VISHTS (Vi approved header)
+    // Template: "Your OTP for login is {#numeric#}. 
+    //            Valid for 5 minutes. Do not share with anyone."
+    // AUTOGEN = 2Factor generates OTP automatically
+    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${mobile}/AUTOGEN/VishtechOTP`;
 
     const smsRes = await fetch(url, { method: 'GET' });
     const smsData = await smsRes.json();
@@ -46,7 +50,7 @@ export default async function handler(req, res) {
 
     const sessionId = smsData.Details; // 2Factor's session id for this OTP
 
-    // ── Store session ID in Firestore (REST API — no Admin SDK needed) ──
+    // ── Store session ID in Firestore (REST API) ────────────
     const projectId = 'the-kathi-roll-hub';
     const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/temp_otps/${mobile}`;
 
@@ -77,3 +81,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: 'Server error: ' + err.message });
   }
 }
+
+
+
+
+
+
+
