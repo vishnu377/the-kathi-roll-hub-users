@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     // Template: "Your OTP for login is {#numeric#}. 
     //            Valid for 5 minutes. Do not share with anyone."
     // AUTOGEN = 2Factor generates OTP automatically
-    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${mobile}/AUTOGEN/VishtechOTP`;
+    const url = `https://2factor.in/API/V1/${apiKey}/SMS/${mobile}/AUTOGEN3/VishtechOTP`;
 
     const smsRes = await fetch(url, { method: 'GET' });
     const smsData = await smsRes.json();
