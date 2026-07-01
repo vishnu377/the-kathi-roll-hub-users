@@ -1,0 +1,4 @@
+shared/firebase-config.js
+api/send-otp.js
+api/test.js
+.vscode/
